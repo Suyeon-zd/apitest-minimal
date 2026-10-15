@@ -1,0 +1,19 @@
+# gen_cases 接口清单示例 —— 复制为 case_list.txt 后按需增删
+# 每行一个接口，# 开头为注释
+#
+# 格式1（推荐）：已在 api/endpoints.yaml 登记的接口：  模块.名称 [| payload]
+# 格式2（新接口）：                                    模块.名称 | METHOD | /path [| payload]
+#   - GET 的 payload 为 query string；POST 的 payload 为 JSON 串或原始文本
+#   - POST/PUT 不给 payload 时只生成骨架用例（TODO），DELETE 永远只生成骨架
+# 详见 README 3.6 节
+
+system.org_list
+menu.get_routers
+system.file_level
+asset.dev_type_distribution
+asset.instock_list | pageNum=1&pageSize=10
+
+# 新接口写法示例（放开后脚本会自动登记到 api/endpoints.yaml）：
+# asset.secret_create | POST | /asset/secret/create | {"name": "测试资产"}
+
+asset.dev_type_distribution | GET | deptId=100&status=%E5%9C%A8%E7%94%A8&currentLevel=false

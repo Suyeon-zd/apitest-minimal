@@ -1,0 +1,163 @@
+# api/endpoints.yaml - 接口注册中心（接口路径的唯一事实来源）
+#
+# 组织方式：按业务模块分组，引用 key = "模块.接口名"，如 asset.dev_type_distribution
+# 用例 YAML 中写 api: asset.dev_type_distribution，不再写死 method/path；
+# 后端改路径只需改本文件一处，所有用例自动生效。
+#
+# 每个接口支持字段：
+#   method:    必填，HTTP 方法（GET/POST/PUT/DELETE）
+#   path:      必填，接口路径（自动拼接 base_url；支持 ${var} 运行时变量，如 /asset/${asset_id}）
+#   headers:   可选，该接口专属请求头（如签名/加密头），与全局 Authorization 头自动合并；
+#              值支持 ${ENV_VAR} 环境变量插值（.env / CI 注入）
+#   body_type: 可选，仅对非 GET 请求生效：json（默认，application/json）/
+#              data（原始文本如加密串，或 dict 表单 application/x-www-form-urlencoded）
+
+# ========== 资产管理模块 ==========
+asset:
+  # 资产看板-设备类型分布
+  dev_type_distribution:
+    method: GET
+    path: /asset/dashboard/devTypeDistribution
+
+  # 在库资产列表（v2）
+  instock_list:
+    method: GET
+    path: /asset/instock/v2/list
+
+  asset_summary:
+    method: GET
+    path: /asset/dashboard/assetSummary
+
+  component_and_port_top:
+    method: GET
+    path: /asset/dashboard/componentAndPortTop
+
+  discovery_trend:
+    method: GET
+    path: /asset/dashboard/discoveryTrend
+
+  net_distribution:
+    method: GET
+    path: /asset/dashboard/netDistribution
+
+  org_top:
+    method: GET
+    path: /asset/dashboard/orgTop
+
+  owner_top:
+    method: GET
+    path: /asset/dashboard/ownerTop
+
+  list_group:
+    method: GET
+    path: /asset/assetGroup/listGroup
+
+  list_group_asset:
+    method: GET
+    path: /asset/assetGroup/listGroupAsset
+
+  asset_group_type_distribution:
+    method: GET
+    path: /asset/assetGroup/typeDistribution
+
+  import_task_list:
+    method: GET
+    path: /asset/instock/importTask/list
+
+  instock_2072261774178902016:
+    method: GET
+    path: /asset/instock/v2/2072261774178902016
+
+  tobeupdated_source_distribution:
+    method: GET
+    path: /asset/tobeupdated/sourceDistribution
+
+  tobeupdated_trend:
+    method: GET
+    path: /asset/tobeupdated/tobeupdatedTrend
+
+  tobeupdated_type_distribution:
+    method: GET
+    path: /asset/tobeupdated/typeDistribution
+
+  tobeupdated_list:
+    method: GET
+    path: /asset/tobeupdated/v2/list
+
+  claim_trend:
+    method: GET
+    path: /asset/unclaimed/claimTrend
+
+  unclaimed_list:
+    method: GET
+    path: /asset/unclaimed/list
+
+  unclaimed_source_distribution:
+    method: GET
+    path: /asset/unclaimed/sourceDistribution
+
+  unclaimed_type_distribution:
+    method: GET
+    path: /asset/unclaimed/typeDistribution
+
+
+
+
+
+
+
+
+# ========== 带专属请求头 / 非 JSON 请求体的接口写法示例（需要时放开） ==========
+# 注意：YAML 中同一模块 key 只能出现一次，放开时请合并到上方对应模块下
+# asset:
+#   secret_create:
+#     method: POST
+#     path: /asset/secret/create
+#     headers:
+#       X-Sign: "${SIGN_HEADER}"        # 环境变量插值：值从 .env 或 CI 环境变量注入
+#   form_query:
+#     method: POST
+#     path: /asset/form/query
+#     body_type: data                    # 表单/原始文本提交（默认 json）
+
+#menu:
+#  # 获取前端路由菜单
+#  get_routers:
+#    method: GET
+#    path: /system/menu/getRouters
+#
+#system:
+#  # 获取秘级（在线包装）
+#  file_level:
+#    method: GET
+#    path: /system/onLineWrap/getFileLevel
+
+# ========== system（gen_cases 自动登记 2026-09-28）==========
+system:
+  org_list:
+    method: GET
+    path: /system/dept/orgList
+
+  get_routers:
+    method: GET
+    path: /system/menu/getRouters
+
+  get_file_level:
+    method: GET
+    path: /system/onLineWrap/getFileLevel
+
+  get_info:
+    method: GET
+    path: /system/user/getInfo
+
+  generate_uuid:
+    method: POST
+    path: /system/soul-api/generateUuid
+
+  login_portal_type:
+    method: GET
+    path: /system/dict/data/type/login_portal_type
+
+  office_asset_type:
+    method: GET
+    path: /system/dict/data/type/office_asset_type

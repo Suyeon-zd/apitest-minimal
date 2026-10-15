@@ -1,0 +1,18 @@
+# pyproject.toml - 项目元数据 + 工具入口声明
+#
+# 注意：本文件只承担「项目元信息」+「tools.* 的可发现性入口」职责。
+# 真正的依赖锁定在 requirements.txt + requirements.lock.txt（按需生成）。
+# ruff 在 ruff.toml 单独配置；pytest 在 pytest.ini 配置；
+# 这里是 metadata-only，不与现有配置冲突。
+
+[project]
+name = "apitest"
+version = "0.1.0"
+description = "企业级接口自动化测试框架"
+requires-python = ">=3.8"
+readme = "README.md"
+
+[tool.setuptools.packages.find]
+# 仅作为「项目元信息」使用，setuptools 不真正打包：所有模块按源码直接 import。
+# include 仅用于生成 .dist-info，运行时不被消费。
+include = ["core", "api", "testcases", "tools"]

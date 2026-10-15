@@ -1,0 +1,29 @@
+# ruff.toml - 静态检查配置
+#
+# 用法（在项目根目录执行）：
+#   python -m ruff check core api testcases tools conftest.py
+#
+# 起始阶段只开启"代码必然有问题"的规则，保证门禁不会因存量风格问题误报：
+#   E9  → 语法/文件级错误（如引用了不存在的符号、IO 语法问题）
+#   F63 → print/assert 用法非法
+#   F7  → 语法层面的错误
+#   F82 → 未定义名称（能拦下"导入了不存在的函数"这类真实事故）
+# 全绿后可逐步放开 E4/E7（导入顺序）、F401（未使用导入）等，再收紧为默认规则集。
+target-version = "py38"
+line-length = 120
+
+# data/ 造数模块独立演进，单独 lint，不纳入接口测试门禁
+# AIAIAI/ 是临时目录（被 .gitignore 排除），不参与检查
+exclude = [
+    "data",
+    "output",
+    "schemas",
+    "ddl_export",
+    "AIAIAI",
+    ".venv",
+    ".pytest_cache",
+    "__pycache__",
+]
+
+[lint]
+select = ["E9", "F63", "F7", "F82"]

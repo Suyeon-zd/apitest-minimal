@@ -1,0 +1,22 @@
+# 开发环境配置
+base_url: "http://10.148.242.205/dev-api"
+login_path: "/auth/login"        # 登录接口路径（AuthManager 使用，默认 /auth/login）
+
+# 登录鉴权信息（敏感项经环境变量注入：本地在 .env 配置，CI 中注入同名环境变量）
+clientid: "${CLIENT_ID}"
+encrypt-key: "${ENCRYPT_KEY}"
+payload: "${LOGIN_PAYLOAD}"
+Content-Type: text/plain
+
+# 请求与重试配置
+timeout: [5, 10]
+
+# Token 自动刷新配置
+token_expire_seconds: 1800    # Token 有效期（秒），按实际后端配置调整
+token_refresh_buffer: 60      # 提前 N 秒刷新
+
+# 用例变量：用例 YAML 的 payload/path 中可用 ${NAME} 引用（避免把环境相关的 ID 写死在用例里）
+# 运行时 extract 提取的同名变量会覆盖此处的值，因此可作为"环境默认值"打底
+case_vars:
+  DEPT_ID: "100"                                  # 默认部门 ID（资产/系统模块查询用）
+  GROUP_ID: "9c18b99c158c4cd1b2c7e2d59b3c2598"    # 默认资产分组 ID

@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "total": {
+      "type": "integer"
+    },
+    "rows": {
+      "type": "array",
+      "items": {}
+    },
+    "code": {
+      "type": "integer"
+    },
+    "msg": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "total",
+    "rows",
+    "code",
+    "msg"
+  ],
+  "additionalProperties": true
+}

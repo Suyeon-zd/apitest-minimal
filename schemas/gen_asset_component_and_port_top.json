@@ -1,0 +1,65 @@
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "integer"
+    },
+    "msg": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "component": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "name",
+              "value"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "port": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "name",
+              "value"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "component",
+        "port"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "code",
+    "msg",
+    "data"
+  ],
+  "additionalProperties": true
+}

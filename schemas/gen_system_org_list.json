@@ -1,0 +1,100 @@
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "integer"
+    },
+    "msg": {
+      "type": "string"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "deptId": {
+            "type": "integer"
+          },
+          "parentId": {
+            "type": "integer"
+          },
+          "parentName": {},
+          "ancestors": {
+            "type": "string"
+          },
+          "deptName": {
+            "type": "string"
+          },
+          "deptCategory": {
+            "type": "string"
+          },
+          "orderNum": {
+            "type": "integer"
+          },
+          "leader": {},
+          "leaderName": {},
+          "phone": {},
+          "email": {},
+          "status": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "treeAddExtra": {},
+          "tenantId": {
+            "type": "string"
+          },
+          "orgManLevel": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "leaf": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deptId",
+          "parentId",
+          "parentName",
+          "ancestors",
+          "deptName",
+          "deptCategory",
+          "orderNum",
+          "leader",
+          "leaderName",
+          "phone",
+          "email",
+          "status",
+          "createTime",
+          "updateTime",
+          "type",
+          "treeAddExtra",
+          "tenantId",
+          "orgManLevel",
+          "label",
+          "id",
+          "leaf"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "code",
+    "msg",
+    "data"
+  ],
+  "additionalProperties": true
+}

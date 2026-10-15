@@ -1,0 +1,78 @@
+{
+  "type": "object",
+  "properties": {
+    "total": {
+      "type": "integer"
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "groupId": {
+            "type": "string"
+          },
+          "assetId": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "devType": {
+            "type": "string"
+          },
+          "count": {},
+          "assetCode": {
+            "type": "string"
+          },
+          "devName": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": "string"
+          },
+          "ips": {
+            "type": "string"
+          },
+          "comName": {
+            "type": "string"
+          },
+          "total": {},
+          "bigAssetStatusVoList": {}
+        },
+        "required": [
+          "id",
+          "groupId",
+          "assetId",
+          "createTime",
+          "devType",
+          "count",
+          "assetCode",
+          "devName",
+          "resourceId",
+          "ips",
+          "comName",
+          "total",
+          "bigAssetStatusVoList"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "code": {
+      "type": "integer"
+    },
+    "msg": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "total",
+    "rows",
+    "code",
+    "msg"
+  ],
+  "additionalProperties": true
+}
