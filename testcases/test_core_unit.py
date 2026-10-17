@@ -1,7 +1,8 @@
 # testcases/test_core_unit.py - 框架核心逻辑单元测试（纯本地：不联网、不连库）
 #
 # 覆盖 core/ 下的断言引擎、路径取值、变量替换、配置插值、接口注册中心、
-# 请求客户端（脱敏/重试/401 重登）以及用例模型校验。
+# 请求客户端（脱敏/鉴权日志）以及用例模型校验。
+# 重试退避 / 401 重登属「HTTP 自愈」积木（plugins/http_heal），其回归见 test_http_heal_unit.py。
 # 这些是框架自身的地基，必须有不依赖被测环境的回归保护。
 import json
 import os
@@ -14,7 +15,7 @@ import requests
 
 from core import assertions, base_client
 from core.assertions import AssertionEngine, compare, get_by_path
-from core.base_client import BaseClient, _classify, _is_retryable, _mask, _mask_body
+from core.base_client import BaseClient, _classify, _mask, _mask_body
 from core.case_model import STRONG_ASSERT_TYPES, TestCase
 from core.config_loader import expand_env_vars
 from core.constants import KNOWN_MARKERS
@@ -409,12 +410,6 @@ class TestBaseClientMasking:
         assert _classify(requests.exceptions.ConnectionError()) == "连接错误"
         assert _classify(ValueError()) == "未知异常"
 
-    def test_is_retryable_only_timeout_and_connection(self):
-        assert _is_retryable(requests.exceptions.Timeout(), {"timeout"})
-        assert not _is_retryable(requests.exceptions.Timeout(), {"connection"})
-        assert _is_retryable(requests.exceptions.ConnectionError(), {"connection"})
-        assert not _is_retryable(ValueError(), {"timeout", "connection"})
-
     def test_request_log_hides_authorization(self, monkeypatch, caplog):
         session = FakeSession()
         session.responses = [FakeResponse()]
@@ -428,74 +423,7 @@ class TestBaseClientMasking:
         assert "token-1" not in log_text, "Authorization 中的 token 不允许明文进日志"
 
 
-# ========== 8. 请求客户端：重试与 401 重登 ==========
-
-class TestBaseClientRetry:
-
-    def _client(self, monkeypatch, session, **kwargs):
-        monkeypatch.setattr(base_client.requests, "Session", lambda: session)
-        return BaseClient("http://unit-test", **kwargs)
-
-    def test_no_retry_by_default(self, monkeypatch):
-        session = FakeSession()
-        session.errors = [requests.exceptions.ConnectionError("boom")]
-        client = self._client(monkeypatch, session)
-        with pytest.raises(requests.exceptions.ConnectionError):
-            client.request("GET", "/x")
-        assert len(session.calls) == 1, "默认 retry.times=0，不应重试"
-
-    def test_retry_on_connection_error(self, monkeypatch):
-        session = FakeSession()
-        session.errors = [requests.exceptions.ConnectionError("boom")]
-        session.responses = [FakeResponse(200)]
-        client = self._client(monkeypatch, session,
-                              retry={"times": 1, "backoff": 0, "on": ["connection"]})
-        resp = client.request("GET", "/x")
-        assert resp.status_code == 200
-        assert len(session.calls) == 2, "连接类异常应重试一次"
-
-    def test_no_retry_when_category_not_enabled(self, monkeypatch):
-        session = FakeSession()
-        session.errors = [requests.exceptions.Timeout("slow")]
-        client = self._client(monkeypatch, session,
-                              retry={"times": 2, "backoff": 0, "on": ["connection"]})
-        with pytest.raises(requests.exceptions.Timeout):
-            client.request("GET", "/x")
-        assert len(session.calls) == 1, "未开启 timeout 重试时不应重试"
-
-    def test_relogin_and_replay_on_401(self, monkeypatch):
-        session = FakeSession()
-        session.responses = [FakeResponse(401), FakeResponse(200)]
-        auth = FakeAuth()
-        client = self._client(monkeypatch, session, auth=auth)
-
-        resp = client.request("GET", "/x")
-
-        assert resp.status_code == 200, "401 后重放应返回真实结果"
-        assert auth.login_count == 2, "收到 401 必须重新登录一次"
-        assert len(session.calls) == 2, "401 后应重放一次请求"
-        assert session.headers["Authorization"] == "Bearer token-2", "重放需用新 Token"
-
-    def test_relogin_disabled(self, monkeypatch):
-        session = FakeSession()
-        session.responses = [FakeResponse(401)]
-        auth = FakeAuth()
-        client = self._client(monkeypatch, session, auth=auth, relogin_on_401=False)
-
-        resp = client.request("GET", "/x")
-
-        assert resp.status_code == 401
-        assert auth.login_count == 1, "关闭开关后不应触发重登"
-        assert len(session.calls) == 1
-
-    def test_no_relogin_without_auth(self, monkeypatch):
-        session = FakeSession()
-        session.responses = [FakeResponse(401)]
-        client = self._client(monkeypatch, session)
-        assert client.request("GET", "/x").status_code == 401
-
-
-# ========== 9. 用例模型校验 ==========
+# ========== 8. 用例模型校验 ==========
 
 class TestCaseModel:
 
@@ -570,18 +498,18 @@ class TestCaseModel:
         assert "schema" in STRONG_ASSERT_TYPES and "status_code" not in STRONG_ASSERT_TYPES
 
 
-# ========== 10. schemas/ 契约文件有效性 ==========
+# ========== 10. test_data/schemas/ 契约文件有效性 ==========
 
 class TestSchemaFiles:
 
     def test_all_schema_files_are_real_schemas(self):
-        """schemas/ 下每个文件都必须是真 JSON Schema
+        """test_data/schemas/ 下每个文件都必须是真 JSON Schema
 
         曾出现：org_list.json 实际是响应快照，被当作 Schema 使用时 jsonschema
         视为空 schema 永远通过 —— 断言形同虚设。
         """
         files = sorted(assertions.SCHEMA_DIR.glob("*.json"))
-        assert files, "schemas/ 目录下应至少有一个 Schema 文件"
+        assert files, "test_data/schemas/ 目录下应至少有一个 Schema 文件"
         for path in files:
             schema = json.loads(path.read_text(encoding="utf-8"))
             assert assertions._SCHEMA_KEYWORDS & set(schema), (

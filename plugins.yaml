@@ -1,0 +1,11 @@
+# 积木清单：框架的非核心能力全部以积木（pytest 插件）形式插拔。
+#   拔出某积木 = 注释掉对应行（核心框架照常运行，见 README 第 6 节）
+#   临时禁用   = 环境变量 APITEST_PLUGINS_OFF=reporting,http_heal（短名逗号分隔；* 表示全部拔出，即纯核心模式）
+# 注意：本清单只列 pytest 插件积木；casegen 是命令行工具（python -m plugins.casegen.gen_cases），不经本清单。
+plugins:
+  - plugins.reporting.plugin     # 测试报告（pytest-html + Allure）
+  - plugins.case_extras.plugin   # 跨用例：depends_on 依赖 / extract 提取 / cleanup 清理 / --cases-shared
+  - plugins.xdist_guard          # 并行护栏（装了 pytest-xdist 才生效）
+  - plugins.terminal_cn.plugin   # Windows 终端 UTF-8 + 中文用例名显示
+  - plugins.log_setup.plugin     # 日志：控制台 + <APITEST_OUTPUT_DIR>/logs/run.log（按天滚动）
+  - plugins.http_heal.plugin     # HTTP 自愈：超时重试 / 401 自动重登 / --fail-on-auth-expired

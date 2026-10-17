@@ -1,40 +1,10 @@
-allure-pytest==2.16.0
-allure-python-commons==2.16.0
-attrs @ file:///C:/Users/task_177495968274377/croot/attrs_1774959754711/work
-backports.zstd==1.7.0
-certifi==2026.5.20
-cffi==2.1.1
-charset-normalizer==3.4.7
-colorama==0.4.6
-conda-pack==0.9.2
-coverage==7.16.2
-cryptography==42.0.0
-elastic-transport==8.17.1
-elasticsearch==8.17.2
-execnet==2.1.2
-future==1.0.0
-idna==3.16
-iniconfig==2.3.0
-Jinja2==3.1.6
-jsonschema==4.26.0
-jsonschema-specifications==2025.9.1
-MarkupSafe==3.0.3
-packaging==26.0
-pluggy @ file:///C:/Users/task_177697290055079/croot/pluggy_1776973027598/work
-pycparser==3.0
-pytest==8.3.4
-pytest-cov==7.1.0
-pytest-html==4.1.1
-pytest-metadata==3.1.1
-pytest-rerunfailures==16.7
-pytest-xdist==3.8.0
-python-dateutil==2.9.0.post0
-python-dotenv==1.2.2
-PyYAML==6.0.3
-referencing==0.37.0
+# 核心骨架依赖（跑通框架的最小集合；传递依赖由 pip 自动解析，不再锁定）
+#   - HTTP 请求 / YAML 用例解析 / JSON Schema 断言 / 环境变量 / pytest 运行时
 requests==2.34.2
-rpds-py==2026.6.3
-ruff==0.17.0
-six==1.17.0
-typing_extensions==4.16.0
-urllib3==2.7.0
+PyYAML==6.0.3
+jsonschema==4.26.0
+python-dotenv==1.2.2
+pytest==8.3.4
+
+# 报告积木（allure + pytest-html）的依赖单独放，需要报告时装：
+#   pip install -r requirements-reporting.txt

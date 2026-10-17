@@ -1,7 +1,7 @@
 # api/registry.py - 接口注册中心加载器
 #
 # 从 api/endpoints.yaml 加载接口定义，为 YAML 用例提供 "逻辑接口名 → method/path/headers"
-# 的唯一解析入口。用例只写 api: user.get_info，路径维护集中在 endpoints.yaml。
+# 的唯一解析入口。用例只写 api: system.get_info，路径维护集中在 endpoints.yaml。
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class Endpoint:
     """单个接口的注册信息"""
 
-    key: str                        # 完整逻辑名，如 user.get_info
+    key: str                        # 完整逻辑名，如 system.get_info
     method: str                     # HTTP 方法，统一大写
     path: str                       # 接口路径（自动拼接 base_url，运行时支持 ${var} 业务变量）
     headers: dict = field(default_factory=dict)   # 接口专属请求头（加载时完成环境变量插值）

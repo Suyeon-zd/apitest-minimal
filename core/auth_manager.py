@@ -15,7 +15,8 @@ class AuthManager:
         self._token = None
         self._login_time = 0
         # 用无 token 的裸 client 登录（登录接口本身不需要 token）
-        self._login_client = BaseClient(base_url=config['base_url'])
+        # 传 config：让 HTTP 自愈积木（若嵌入）对登录请求同样生效（重试等）
+        self._login_client = BaseClient(base_url=config['base_url'], config=config)
 
     def login(self):
         """执行登录，缓存 token 和登录时间"""
@@ -26,15 +27,17 @@ class AuthManager:
         }
         # 登录路径可在环境配置中通过 login_path 覆盖，默认 /auth/login
         login_path = self.config.get("login_path", "/auth/login")
-        resp = self._login_client.request(
-            "POST", login_path, data=self.config['payload'], headers=headers
-        )
+        kwargs = {"data": self.config['payload'], "headers": headers}
+        # 带上环境超时，避免登录请求在网络/配置异常时无限阻塞
+        timeout = self.config.get("timeout")
+        if timeout is not None:
+            kwargs["timeout"] = tuple(timeout)
+        resp = self._login_client.request("POST", login_path, **kwargs)
         try:
             body = resp.json()
         except ValueError:
             raise RuntimeError(f"登录失败: 响应不是 JSON (status={resp.status_code}, body={resp.text[:200]})")
         # token 位置兼容两种响应：{access_token: ...} 或 {data: {access_token: ...}}
-        # （与 data/http_auth.py 的登录实现保持一致，避免同一后端两处登录行为不同）
         token = body.get("access_token")
         if not token and isinstance(body.get("data"), dict):
             token = body["data"].get("access_token")

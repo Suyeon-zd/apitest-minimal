@@ -8,6 +8,12 @@ Content-Type: text/plain
 payload: "your_prod_payload"
 
 timeout: [5, 10]
+
+# HTTP 自愈（由 plugins/http_heal 积木读取；拔出积木后这些键被忽略）
+retry: {times: 0, backoff: 0.5, retry_on: [timeout, connection]}  # times=0 不重试，需要时改成正整数
+auth_relogin_401: true         # 收到 401/403 自动重登并重放
+auth_fail_on_expired: false    # 重登后仍 401/403 时是否直接抛错
+
 token_expire_seconds: 1800
 token_refresh_buffer: 60
 

@@ -39,12 +39,7 @@ def load_dotenv(dotenv_path: Path = None):
 
 
 def expand_env_vars(obj):
-    """递归替换 str/dict/list 中的 ${VAR}、${VAR:-默认值} 占位符
-
-    注意：data/infra/env_loader.py 中有一份语义完全相同的实现。
-    两份**刻意保留**（硬约束：data/ 不得 import core/，需可整体拷贝到其他项目）；
-    修改其中一份时请同步另一份，避免插值行为漂移。
-    """
+    """递归替换 str/dict/list 中的 ${VAR}、${VAR:-默认值} 占位符"""
 
     def _replace(match):
         name, default = match.group(1), match.group(2)
@@ -52,7 +47,7 @@ def expand_env_vars(obj):
             return os.environ[name]
         if default is not None:
             return default
-        # 未设置且无默认值：不抛异常（避免纯 --csv 场景被无关配置卡死），但显式告警
+        # 未设置且无默认值：不抛异常，但显式告警并替换为空串
         logger.warning("环境变量 %s 未设置，对应配置项已替换为空串", name)
         return ""
 

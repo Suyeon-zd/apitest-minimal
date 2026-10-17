@@ -105,10 +105,6 @@ class TestCase:
     payload: Any = None                        # 请求参数（GET=query string，其他=body）
     body_type: Optional[str] = None            # json（默认）/ data；None 表示沿用注册中心配置
     headers: Dict[str, Any] = field(default_factory=dict)
-    params: Any = None                         # 额外 query 参数（可与 body 并存）
-    files: Any = None                          # multipart 文件：{"file": (文件名, 内容, MIME)}
-    cookies: Dict[str, Any] = field(default_factory=dict)
-    verify: Optional[bool] = None              # 是否校验 TLS 证书（None=用 requests 默认）
     timeout: Any = None                        # 秒数 或 [connect, read]；None=用环境配置
     extract: Dict[str, str] = field(default_factory=dict)   # 响应字段 → 全局变量名
     assertions: List[dict] = field(default_factory=list)    # 对应 YAML 的 assert
@@ -131,7 +127,7 @@ class TestCase:
         if not api:
             raise ValueError(
                 f"{source}: 用例缺少 api 字段，"
-                f"请填写接口注册中心中的逻辑名（如 user.get_info）"
+                f"请填写接口注册中心中的逻辑名（如 system.get_info）"
             )
         case_id = raw.get("api_name") or str(api)
 
@@ -170,10 +166,6 @@ class TestCase:
             payload=raw.get("payload"),
             body_type=body_type,
             headers=_as_dict(raw, "headers", case_id),
-            params=raw.get("params"),
-            files=raw.get("files"),
-            cookies=_as_dict(raw, "cookies", case_id),
-            verify=raw.get("verify"),
             timeout=raw.get("timeout"),
             extract=_as_dict(raw, "extract", case_id),
             assertions=assertions,

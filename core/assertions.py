@@ -1,9 +1,11 @@
 # core/assertions.py - 系统化断言引擎
 import json
+import logging
 from pathlib import Path
 import jsonschema
-from core.logger import logger
 import re
+
+logger = logging.getLogger(__name__)
 
 
 # ========== 断言结果数据结构 ==========
@@ -31,7 +33,7 @@ def _normalize_path(path: str) -> str:
 
 
 # Schema 文件目录（模块级常量，便于单测替换为临时目录）
-SCHEMA_DIR = Path(__file__).parent.parent / "schemas"
+SCHEMA_DIR = Path(__file__).parent.parent / "test_data" / "schemas"
 
 
 def get_by_path(data, path):
@@ -259,7 +261,7 @@ class AssertionEngine:
         if not schema_file:
             return AssertionResult("schema", False, "缺少 schema_file 配置")
 
-        # 从项目根目录的 schemas/ 下加载 schema 文件
+        # 从 test_data/schemas/ 下加载 schema 文件
         schema_path = SCHEMA_DIR / schema_file
         if not schema_path.exists():
             return AssertionResult("schema", False, f"Schema 文件不存在: {schema_path}")
@@ -273,7 +275,7 @@ class AssertionEngine:
                 return AssertionResult(
                     "schema", False,
                     f"{schema_file} 不是合法的 JSON Schema（缺少 type/properties/required 等关键字），"
-                    f"该断言无法拦截任何结构变化，请改用 tools/gen_cases.py 生成的 gen_*.json"
+                    f"该断言无法拦截任何结构变化，请改用 plugins/casegen/gen_cases.py 生成的 gen_*.json"
                 )
             body = resp.json()
             jsonschema.validate(instance=body, schema=schema)

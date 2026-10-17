@@ -1,6 +1,6 @@
-# 2026-09-28 由 tools/har2list.py 自动生成（来源: 10.148.242.205_002.har）
+# 2026-09-28 由 plugins/casegen/har2list.py 自动生成（来源: 10.148.242.205_002.har）
 # 请人工审阅：删除不想测的接口行（文件上传/导出/危险写接口），
-# 再交给 gen_cases.py 生成用例: python -m tools.gen_cases --list 本文件
+# 再交给 gen_cases.py 生成用例: python -m plugins.casegen.gen_cases --list 本文件
 
 asset.list_group | GET | /asset/assetGroup/listGroup | deptId=100&pageNum=1&pageSize=10
 asset.list_group_asset | GET | /asset/assetGroup/listGroupAsset | pageNum=1&pageSize=10&groupId=9c18b99c158c4cd1b2c7e2d59b3c2598&devType=应用系统

@@ -2,7 +2,7 @@
 base_url: "http://10.148.242.205/dev-api"
 login_path: "/auth/login"        # 登录接口路径（AuthManager 使用，默认 /auth/login）
 
-# 登录鉴权信息（敏感项经环境变量注入：本地在 .env 配置，CI 中注入同名环境变量）
+# 登录鉴权信息（敏感项经环境变量注入：本地在 .env 配置，也可直接设置系统环境变量）
 clientid: "${CLIENT_ID}"
 encrypt-key: "${ENCRYPT_KEY}"
 payload: "${LOGIN_PAYLOAD}"
@@ -10,6 +10,11 @@ Content-Type: text/plain
 
 # 请求与重试配置
 timeout: [5, 10]
+
+# HTTP 自愈（由 plugins/http_heal 积木读取；拔出积木后这些键被忽略）
+retry: {times: 0, backoff: 0.5, retry_on: [timeout, connection]}  # times=0 不重试，需要时改成正整数
+auth_relogin_401: true         # 收到 401/403 自动重登并重放
+auth_fail_on_expired: false    # 重登后仍 401/403 时是否直接抛错
 
 # Token 自动刷新配置
 token_expire_seconds: 1800    # Token 有效期（秒），按实际后端配置调整

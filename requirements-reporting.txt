@@ -1,0 +1,8 @@
+# 报告积木依赖（core/reporting.py 端口的真实实现，见 plugins/reporting/）
+#
+# 嵌入：保留 pytest.ini addopts 中的 `-p plugins.reporting.plugin`
+# 拔出：删掉该 -p 参数（本文件也不必安装），核心上报自动降级为空操作
+#
+# 安装：pip install -r requirements-reporting.txt
+allure-pytest==2.16.0   # Allure 报告（step / attach / 环境元信息）
+pytest-html==4.1.1      # HTML 报告（断言明细 extras）

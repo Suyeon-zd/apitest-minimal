@@ -1,4 +1,4 @@
-# tools/har2list.py - HAR → 接口清单转换器（gen_cases.py 前置工具）
+# plugins/casegen/har2list.py - HAR → 接口清单转换器（gen_cases.py 前置工具）
 #
 # 把 Chrome/Edge F12 Network 面板导出的 HAR 文件，一键转换为 gen_cases.py 的接口清单
 # （格式2全格式行），避免近百个接口逐个手工复制。
@@ -6,10 +6,10 @@
 # 用法：
 #   1. F12 → Network → 勾选 Preserve log → 把各模块页面点一遍（让接口都发出来）
 #   2. Network 面板空白处右键 → "Save all as HAR with content" 保存为 xxx.har
-#   3. python -m tools.har2list --har xxx.har                # base_url 自动读 config/dev.yaml
-#      python -m tools.har2list --har xxx.har --env staging  # 指定环境的 base_url
-#      python -m tools.har2list --har xxx.har --out my_list.txt
-#   4. 人工审阅生成的清单（删掉不想测的行）→ python -m tools.gen_cases --list <清单>
+#   3. python -m plugins.casegen.har2list --har xxx.har                # base_url 自动读 config/dev.yaml
+#      python -m plugins.casegen.har2list --har xxx.har --env staging  # 指定环境的 base_url
+#      python -m plugins.casegen.har2list --har xxx.har --out my_list.txt
+#   4. 人工审阅生成的清单（删掉不想测的行）→ python -m plugins.casegen.gen_cases --list <清单>
 #
 # 转换规则：
 #   - 只保留 base_url 前缀下的请求（其余域名的静态/第三方请求全部过滤）
@@ -27,10 +27,21 @@ from datetime import date
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+# 积木位置：plugins/casegen/（非核心，需要时从项目根目录用 -m 运行）
+# 嵌回方式：本目录可整体保留在 plugins/ 下运行，也可拷回项目根 tools/ 目录
+# （拷回根目录 tools/ 时把本行的 parents[2] 改回 parents[1]）
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 from core.config_loader import load_config                       # noqa: E402
-from core.logger import logger                                   # noqa: E402
+import logging                                                   # noqa: E402
+
+# CLI 工具的日志配置（独立于 pytest：控制台输出即可，不写 output/logs 文件）
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)                             # noqa: E402
 
 TODAY = date.today().isoformat()
 HTTP_METHODS = ("GET", "POST", "PUT", "DELETE", "PATCH")
@@ -193,9 +204,9 @@ def convert(har_path: Path, base_url: str) -> tuple:
             lines_by_module.setdefault(module, []).append(line)
 
     modules = sorted(lines_by_module)
-    header = (f"# {TODAY} 由 tools/har2list.py 自动生成（来源: {har_path.name}）\n"
+    header = (f"# {TODAY} 由 plugins/casegen/har2list.py 自动生成（来源: {har_path.name}）\n"
               f"# 请人工审阅：删除不想测的接口行（文件上传/导出/危险写接口），\n"
-              f"# 再交给 gen_cases.py 生成用例: python -m tools.gen_cases --list 本文件\n")
+              f"# 再交给 gen_cases.py 生成用例: python -m plugins.casegen.gen_cases --list 本文件\n")
     text = header + "\n" + "\n".join(
         line for mod in modules for line in lines_by_module[mod]) + "\n"
     return text, stats
@@ -208,8 +219,8 @@ def _parse_args():
     parser.add_argument("--env", default="dev", help="读取 config/<env>.yaml 的 base_url，默认 dev")
     parser.add_argument("--base-url", default=None,
                         help="直接指定 base_url（优先级高于 --env 配置）")
-    parser.add_argument("--out", default="tools/case_list_from_har.txt",
-                        help="清单输出路径（默认 tools/case_list_from_har.txt）")
+    parser.add_argument("--out", default="plugins/casegen/case_list_from_har.txt",
+                        help="清单输出路径（默认 plugins/casegen/case_list_from_har.txt）")
     return parser.parse_args()
 
 
@@ -233,7 +244,7 @@ def main():
     print(f"  总请求 {stats['total']} 条 | 保留 {stats['kept']} 条 | "
           f"非 base_url 前缀/其他方法过滤 {stats['external']} 条 | "
           f"静态资源过滤 {stats['static']} 条 | 登录接口排除 {stats['login']} 条")
-    print("下一步：人工审阅清单后执行  python -m tools.gen_cases.py --list "
+    print("下一步：人工审阅清单后执行  python -m plugins.casegen.gen_cases --list "
           + str(out_path.relative_to(PROJECT_ROOT)))
 
 

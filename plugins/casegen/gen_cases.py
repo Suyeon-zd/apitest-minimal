@@ -1,14 +1,14 @@
-# tools/gen_cases.py - 测试用例自动生成器（契约快照式）
+# plugins/casegen/gen_cases.py - 测试用例自动生成器（契约快照式）
 #
 # 思路：接口清单 txt → 逐个真实调用 → 解析响应结构 → 自动生成基线用例 YAML。
 # 与手写用例（如 test_data/asset/asset_summary.yaml）互补：生成器负责"结构层"基线，
 # 值层断言以注释保留，人工确认后放开。
 #
 # 用法：
-#   python -m tools.gen_cases --list tools/case_list.txt                 # 正式生成
-#   python -m tools.gen_cases --list tools/case_list.txt --dry-run       # 只预览不写文件
-#   python -m tools.gen_cases --list tools/case_list.txt --force         # 整文件覆盖重新生成
-#   python -m tools.gen_cases --list tools/case_list.txt --env staging   # 指定环境
+#   python -m plugins.casegen.gen_cases --list plugins/casegen/case_list.txt            # 正式生成
+#   python -m plugins.casegen.gen_cases --list plugins/casegen/case_list.txt --dry-run  # 只预览不写文件
+#   python -m plugins.casegen.gen_cases --list plugins/casegen/case_list.txt --force    # 整文件覆盖重新生成
+#   python -m plugins.casegen.gen_cases --list plugins/casegen/case_list.txt --env staging  # 指定环境
 #
 # 清单格式（每行一个接口，# 开头为注释）：
 #   格式1（推荐）：已在 api/endpoints.yaml 登记的接口：  模块.名称 [| payload]
@@ -22,6 +22,7 @@
 #                  避免把错误响应的结构固化成断言
 import argparse
 import json
+import os
 import re
 import shutil
 import sys
@@ -32,13 +33,24 @@ from urllib.parse import parse_qs
 
 import yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+# 积木位置：plugins/casegen/（非核心，需要时从项目根目录用 -m 运行）
+# 嵌回方式：本目录可整体保留在 plugins/ 下运行，也可拷回项目根 tools/ 目录
+# （拷回根目录 tools/ 时把本行的 parents[2] 改回 parents[1]）
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 from core.config_loader import load_config                       # noqa: E402
 from core.auth_manager import AuthManager                        # noqa: E402
 from core.base_client import BaseClient                          # noqa: E402
-from core.logger import logger                                   # noqa: E402
 from api.registry import EndpointRegistry                        # noqa: E402
+import logging                                                   # noqa: E402
+
+# CLI 工具的日志配置（独立于 pytest：控制台输出即可，不写 output/logs 文件）
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)                             # noqa: E402
 
 TODAY = date.today().isoformat()
 HTTP_METHODS = ("GET", "POST", "PUT", "DELETE", "PATCH")
@@ -274,13 +286,13 @@ def _meta_block(source_key: str) -> dict:
         "_meta": {
             "generated_at": datetime.datetime.now().isoformat(timespec="seconds"),
             "source_key": source_key,
-            "generator": "tools/gen_cases.py",
+            "generator": "plugins/casegen/gen_cases.py",
         }
     }
 
 
 def build_schema_file(key: str, body, schemas_dir: Path, strict=False, write: bool = True):
-    """生成 schemas/gen_<key>.json，返回文件名（dry-run 不落盘）"""
+    """生成 <schemas_dir>/gen_<key>.json，返回文件名（dry-run 不落盘）"""
     fname = f"gen_{re.sub(r'[^0-9A-Za-z]+', '_', key)}.json"
     if not write:
         return fname    # dry-run 时只算名字，不写
@@ -389,7 +401,7 @@ def emit_case(entry: ApiEntry, struct: list, value_comments: list,
 def save_module_cases(module: str, blocks: list, out_dir: Path, force: bool) -> dict:
     """按模块写出 <module>_gen.yaml；默认跳过已存在的 api（保护人工修改），--force 整文件覆盖
 
-    --force 路径现在会强制把旧 _gen.yaml 备份到 output/gen_cases_backups/<时间戳>/ 下再整文件覆盖，
+    --force 路径现在会强制把旧 _gen.yaml 备份到 <APITEST_OUTPUT_DIR>/gen_cases_backups/<时间戳>/ 下再整文件覆盖，
     避免历史一句"force 一下"造成的人工调过的断言全部丢失。
     """
     path = out_dir / module / f"{module}_gen.yaml"
@@ -407,7 +419,8 @@ def save_module_cases(module: str, blocks: list, out_dir: Path, force: bool) -> 
     if force:
         # ---- 强制整文件覆盖前的安全备份（避免一行 --force 抹掉手写调过的断言）----
         if path.exists():
-            backup_dir = PROJECT_ROOT / "output" / "gen_cases_backups"
+            OUTPUT_ROOT = Path(os.getenv("APITEST_OUTPUT_DIR", PROJECT_ROOT / "output"))
+            backup_dir = OUTPUT_ROOT / "gen_cases_backups"
             backup_dir.mkdir(parents=True, exist_ok=True)
             import datetime
             stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -430,7 +443,7 @@ def save_module_cases(module: str, blocks: list, out_dir: Path, force: bool) -> 
 
 
 def _file_header() -> str:
-    return (f"# {TODAY} 由 tools/gen_cases.py 自动生成（契约快照基线用例）\n"
+    return (f"# {TODAY} 由 plugins/casegen/gen_cases.py 自动生成（契约快照基线用例）\n"
             f"# 结构层断言已生效；值层断言以注释保留，确认后放开\n"
             f"# 重新生成默认跳过已存在的 api；--force 整文件覆盖（会丢弃人工修改）")
 
@@ -442,9 +455,10 @@ def _parse_args():
     parser.add_argument("--list", required=True, help="接口清单 txt 路径")
     parser.add_argument("--env", default="dev", help="环境：dev/staging/prod，默认 dev")
     parser.add_argument("--out", default="test_data", help="用例输出根目录，默认 test_data")
-    parser.add_argument("--schemas-dir", default="schemas", help="Schema 输出目录，默认 schemas")
+    parser.add_argument("--schemas-dir", default="test_data/schemas",
+                        help="Schema 输出目录，默认 test_data/schemas")
     parser.add_argument("--force", action="store_true",
-                        help="重新生成时整文件覆盖 <module>_gen.yaml（会自动备份到 output/gen_cases_backups/）")
+                        help="重新生成时整文件覆盖 <module>_gen.yaml（会自动备份到 <APITEST_OUTPUT_DIR>/gen_cases_backups/）")
     parser.add_argument("--dry-run", action="store_true",
                         help="只调用与预览，不写任何文件（endpoints.yaml/用例/schema 均不落盘）")
     parser.add_argument("--strict-schema", action="store_true",
@@ -529,7 +543,7 @@ def main():
                 strict=args.strict_schema,
             )
             if schema_file:
-                logger.info("已生成 Schema: schemas/%s", schema_file)
+                logger.info("已生成 Schema: %s/%s", schemas_dir.name, schema_file)
             stats["generated"] += 1
 
         # 自动用例默认 markers：emitted 透传给 emit_case

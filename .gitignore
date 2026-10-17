@@ -2,7 +2,7 @@
 __pycache__/
 *.pyc
 
-# 运行产物（统一在 output/ 下：logs 日志 / reports 报告 / 造数输出）
+# 运行产物（默认统一在 output/ 下：logs 日志 / reports 报告 / 造数输出，可用 APITEST_OUTPUT_DIR 改到其他位置）
 output/
 .pytest_cache/
 
