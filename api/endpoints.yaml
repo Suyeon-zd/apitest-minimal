@@ -161,3 +161,55 @@ system:
   office_asset_type:
     method: GET
     path: /system/dict/data/type/office_asset_type
+
+  character_list:
+    method: GET
+    path: /system/character/list
+
+  sys.user.init_password:
+    method: GET
+    path: /system/config/configKey/sys.user.initPassword
+
+  check_dept_by_id:
+    method: GET
+    path: /system/dept/checkDeptById
+
+  sys_org_person_status:
+    method: GET
+    path: /system/dict/data/type/sys_org_person_status
+
+  sys_show_hide:
+    method: GET
+    path: /system/dict/data/type/sys_show_hide
+
+  zjg_flow_person_level:
+    method: GET
+    path: /system/dict/data/type/zjg_flow_person_level
+
+  zjg_flow_person_position:
+    method: GET
+    path: /system/dict/data/type/zjg_flow_person_position
+
+  zjg_flow_person_type:
+    method: GET
+    path: /system/dict/data/type/zjg_flow_person_type
+
+  menu_list:
+    method: GET
+    path: /system/menu/list
+
+  parent_list:
+    method: GET
+    path: /system/menu/parentList
+
+  org_person_list:
+    method: GET
+    path: /system/orgPerson/list
+
+  list_v2:
+    method: GET
+    path: /system/role/listV2
+
+  user_list:
+    method: GET
+    path: /system/user/list

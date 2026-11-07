@@ -1,4 +1,4 @@
-# testcases/test_http_heal_unit.py - 「HTTP 自愈/重试」积木的回归测试
+# selftest/test_http_heal_unit.py - 「HTTP 自愈/重试」积木的回归测试
 #
 # 这些用例只针对 plugins/http_heal 积木（重试退避 / 401 自动重登 / 鉴权失败开关）。
 # 积木未嵌入时（pytest.ini 的 addopts 去掉对应 -p）整文件自动跳过，

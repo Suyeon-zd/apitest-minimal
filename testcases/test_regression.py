@@ -2,13 +2,13 @@
 from pathlib import Path
 
 import pytest
-import yaml
 from requests.exceptions import ConnectionError, RequestException, Timeout
 from urllib.parse import parse_qs
 
 from api.registry import EndpointRegistry
 from core import case_extras, reporting
 from core.assertions import AssertionEngine
+from core.case_loader import load_cases
 from core.case_model import TestCase
 from core.utils import replace_vars
 
@@ -18,55 +18,9 @@ REGISTRY = EndpointRegistry.load()
 
 # ========== 2. 从 YAML 加载测试用例 ==========
 # 递归扫描 test_data/ 下所有模块目录（如 asset/、system/），新增模块无需改代码
+# 加载与校验逻辑在 core/case_loader.py（离线自检 selftest/test_assets.py 复用同一入口）
 DATA_DIR = Path(__file__).resolve().parents[1] / "test_data"
-
-
-def _validate_registry_refs(case: TestCase):
-    """校验用例引用的接口逻辑名已在注册中心登记
-
-    拼写错误在 pytest --collect-only 阶段就暴露，不需要等到真正执行。
-    （cleanup 步骤引用的接口由跨用例积木的 validate_cases 校验）
-    """
-    if case.api not in REGISTRY:
-        raise ValueError(
-            f"用例 [{case.id}]({case.source}) 引用的接口 '{case.api}' 未注册，"
-            f"请在 api/endpoints.yaml 中登记；可用接口: {REGISTRY.keys}"
-        )
-
-
-def _load_cases() -> list:
-    """扫描并校验全部用例 YAML，转成 TestCase 模型"""
-    if not DATA_DIR.exists():
-        print("⚠️ 警告: 未找到 test_data 目录！")
-        return []
-
-    cases = []
-    seen_ids = {}
-    # sorted 保证跨文件收集顺序确定（文件路径排序），跨用例变量依赖（extract → ${var}）才可靠
-    for yaml_file in sorted(DATA_DIR.rglob("*.yaml")):
-        with open(yaml_file, "r", encoding="utf-8") as f:
-            raw_cases = yaml.safe_load(f)
-        if not raw_cases:
-            continue
-        for raw in raw_cases:
-            case = TestCase.from_dict(raw, source=yaml_file.name)
-            # 用例 id 同时是 pytest 用例名与 depends_on 的引用键，必须全局唯一
-            if case.id in seen_ids:
-                raise ValueError(
-                    f"用例 id 重复: '{case.id}'，同时出现在 "
-                    f"{seen_ids[case.id]} 与 {yaml_file.name}；depends_on 无法区分引用目标"
-                )
-            seen_ids[case.id] = yaml_file.name
-            _validate_registry_refs(case)
-            cases.append(case)
-
-    # 跨 yaml 引用校验（depends_on 命中 / extract 是否被 ${var} 引用）
-    # 由跨用例积木实现；拔出积木后为空操作，不影响收集
-    case_extras.validate_cases(cases, REGISTRY)
-    return cases
-
-
-API_TEST_CASES = _load_cases()
+API_TEST_CASES = load_cases(DATA_DIR, REGISTRY)
 
 
 def parse_payload(payload, body_type="json"):

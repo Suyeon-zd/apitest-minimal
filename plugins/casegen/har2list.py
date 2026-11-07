@@ -176,7 +176,12 @@ def convert(har_path: Path, base_url: str) -> tuple:
             by_key[key] = req
         stats["kept"] += 1
 
-    lines_by_module = {}
+    # kept 是"通过过滤的请求条数"，by_key 才是"去重后的接口数"；
+    # 两者相减即被合并的同 method+path 重复请求数
+    stats["unique"] = len(by_key)
+    stats["duplicate"] = stats["kept"] - stats["unique"]
+
+    entries_by_module = {}
     used_names = {}
     # 预计算模块内末段重名集合：(module, 末段snake) → 出现次数 ≥2 需带前缀
     last_counter = {}
@@ -194,21 +199,36 @@ def convert(har_path: Path, base_url: str) -> tuple:
         name = make_name(path, module, dup_last, used)
         key = f"{module}.{name}"
         payload, hint = build_payload(req)
-        if hint:
-            lines_by_module.setdefault(module, []).append(
-                f"# TODO: {key} | {method} | {path}   ← {hint}")
-        else:
-            # 有参数带 payload（GET=query 串，POST/PUT=body），无参数只写三段
-            line = f"{key} | {method} | {path} | {payload}" if payload \
-                else f"{key} | {method} | {path}"
-            lines_by_module.setdefault(module, []).append(line)
+        entries_by_module.setdefault(module, []).append({
+            "key": key, "method": method, "path": path,
+            "payload": payload, "hint": hint,
+        })
 
-    modules = sorted(lines_by_module)
+    # 渲染：按模块分组 + 条目间空行 + 列对齐，便于人工逐条删除/修改
+    # （parse_list_file 会 strip 每行并跳过空行/注释，行首缩进不影响解析）
+    modules = sorted(entries_by_module)
+    blocks = []
+    for mod in modules:
+        items = entries_by_module[mod]
+        w_key = max(len(i["key"]) for i in items)
+        w_path = max(len(i["path"]) for i in items)
+        block = [f"# ========== {mod}（{len(items)} 条） =========="]
+        for i in items:
+            block.append("")
+            head = f"  {i['key'].ljust(w_key)} | {i['method']:<6} | {i['path'].ljust(w_path)}"
+            if i["hint"]:
+                block.append(f"  # TODO: {i['key']} | {i['method']} | {i['path']}   ← {i['hint']}")
+            elif i["payload"]:
+                block.append(f"{head} | {i['payload']}")
+            else:
+                block.append(head)
+        blocks.append("\n".join(block))
+
     header = (f"# {TODAY} 由 plugins/casegen/har2list.py 自动生成（来源: {har_path.name}）\n"
               f"# 请人工审阅：删除不想测的接口行（文件上传/导出/危险写接口），\n"
-              f"# 再交给 gen_cases.py 生成用例: python -m plugins.casegen.gen_cases --list 本文件\n")
-    text = header + "\n" + "\n".join(
-        line for mod in modules for line in lines_by_module[mod]) + "\n"
+              f"# 再交给 gen_cases.py 生成用例: python -m plugins.casegen.gen_cases --list 本文件\n"
+              f"# 格式: 模块.接口名 | METHOD | /path [| payload]；按模块分组，空行与行首空格不影响解析\n")
+    text = header + "\n" + "\n\n".join(blocks) + "\n"
     return text, stats
 
 
@@ -241,7 +261,8 @@ def main():
     out_path.write_text(text, encoding="utf-8")
 
     logger.info("HAR 转换完成 → %s", out_path.relative_to(PROJECT_ROOT))
-    print(f"  总请求 {stats['total']} 条 | 保留 {stats['kept']} 条 | "
+    print(f"  总请求 {stats['total']} 条 | 过滤后候选 {stats['kept']} 条 | "
+          f"同 method+path 合并 {stats['duplicate']} 条 | 清单接口 {stats['unique']} 个 | "
           f"非 base_url 前缀/其他方法过滤 {stats['external']} 条 | "
           f"静态资源过滤 {stats['static']} 条 | 登录接口排除 {stats['login']} 条")
     print("下一步：人工审阅清单后执行  python -m plugins.casegen.gen_cases --list "

@@ -5,7 +5,7 @@
 # 格式2（新接口）：                                    模块.名称 | METHOD | /path [| payload]
 #   - GET 的 payload 为 query string；POST 的 payload 为 JSON 串或原始文本
 #   - POST/PUT 不给 payload 时只生成骨架用例（TODO），DELETE 永远只生成骨架
-# 详见 README 3.6 节
+# 详见 README 第 8 节
 
 system.org_list
 menu.get_routers

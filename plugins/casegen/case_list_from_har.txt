@@ -1,22 +1,34 @@
-# 2026-09-28 由 plugins/casegen/har2list.py 自动生成（来源: 10.148.242.205_002.har）
+# 2026-11-06 由 plugins/casegen/har2list.py 自动生成（来源: test_1106.har）
 # 请人工审阅：删除不想测的接口行（文件上传/导出/危险写接口），
 # 再交给 gen_cases.py 生成用例: python -m plugins.casegen.gen_cases --list 本文件
+# 格式: 模块.接口名 | METHOD | /path [| payload]；按模块分组，空行与行首空格不影响解析
 
-asset.list_group | GET | /asset/assetGroup/listGroup | deptId=100&pageNum=1&pageSize=10
-asset.list_group_asset | GET | /asset/assetGroup/listGroupAsset | pageNum=1&pageSize=10&groupId=9c18b99c158c4cd1b2c7e2d59b3c2598&devType=应用系统
-asset.asset_group_type_distribution | GET | /asset/assetGroup/typeDistribution | groupId=9c18b99c158c4cd1b2c7e2d59b3c2598
-asset.dev_type_distribution | GET | /asset/dashboard/devTypeDistribution | deptId=100&status=在用&currentLevel=false
-asset.import_task_list | GET | /asset/instock/importTask/list | pageNum=1&pageSize=10&deptId=100&assetType=办公设备
-asset.instock_2072261774178902016 | GET | /asset/instock/v2/2072261774178902016
-asset.instock_list | GET | /asset/instock/v2/list | pageNum=1&pageSize=10&deptId=100&status=在用&type=应用系统&currentLevel=false
-asset.tobeupdated_source_distribution | GET | /asset/tobeupdated/sourceDistribution
-asset.tobeupdated_trend | GET | /asset/tobeupdated/tobeupdatedTrend | dateType=day
-asset.tobeupdated_type_distribution | GET | /asset/tobeupdated/typeDistribution
-asset.tobeupdated_list | GET | /asset/tobeupdated/v2/list | currentLevel=false&deptId=100&statusList=待审批,已核对&pageNum=1&pageSize=10&updateFrom=3
-asset.claim_trend | GET | /asset/unclaimed/claimTrend | dateType=day
-asset.unclaimed_list | GET | /asset/unclaimed/list | currentLevel=false&deptId=100&inductiveStatus=未纳管&pageNum=1&pageSize=10&updateFrom=3
-asset.unclaimed_source_distribution | GET | /asset/unclaimed/sourceDistribution
-asset.unclaimed_type_distribution | GET | /asset/unclaimed/typeDistribution
-system.org_list | GET | /system/dept/orgList | parentId=0&type=org
-system.login_portal_type | GET | /system/dict/data/type/login_portal_type
-system.office_asset_type | GET | /system/dict/data/type/office_asset_type
+# ========== system（14 条） ==========
+
+  system.character_list           | GET    | /system/character/list                          | pageNum=1&pageSize=10
+
+  system.sys.user.init_password   | GET    | /system/config/configKey/sys.user.initPassword 
+
+  system.check_dept_by_id         | GET    | /system/dept/checkDeptById                      | deptNo=100
+
+  system.org_list                 | GET    | /system/dept/orgList                            | parentId=0
+
+  system.sys_org_person_status    | GET    | /system/dict/data/type/sys_org_person_status   
+
+  system.sys_show_hide            | GET    | /system/dict/data/type/sys_show_hide           
+
+  system.zjg_flow_person_level    | GET    | /system/dict/data/type/zjg_flow_person_level   
+
+  system.zjg_flow_person_position | GET    | /system/dict/data/type/zjg_flow_person_position
+
+  system.zjg_flow_person_type     | GET    | /system/dict/data/type/zjg_flow_person_type    
+
+  system.menu_list                | GET    | /system/menu/list                              
+
+  system.parent_list              | GET    | /system/menu/parentList                        
+
+  system.org_person_list          | GET    | /system/orgPerson/list                          | pageNum=1&pageSize=10
+
+  system.list_v2                  | GET    | /system/role/listV2                             | pageNum=1&pageSize=10
+
+  system.user_list                | GET    | /system/user/list                               | pageNum=1&pageSize=10
