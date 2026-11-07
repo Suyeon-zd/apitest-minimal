@@ -1,0 +1,160 @@
+{
+  "type": "object",
+  "properties": {
+    "total": {
+      "type": "integer"
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "deptId": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "idCard": {},
+          "idCardNum": {},
+          "mdmHId": {},
+          "nickName": {
+            "type": "string"
+          },
+          "userType": {},
+          "email": {
+            "type": "string"
+          },
+          "phonenumber": {
+            "type": "string"
+          },
+          "sex": {
+            "type": "string"
+          },
+          "avatar": {},
+          "status": {
+            "type": "string"
+          },
+          "loginIp": {
+            "type": "string"
+          },
+          "loginDate": {},
+          "remark": {},
+          "reason": {},
+          "userFlag": {},
+          "createTime": {
+            "type": "string"
+          },
+          "deptName": {
+            "type": "string"
+          },
+          "roles": {},
+          "roleIds": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "postIds": {},
+          "roleId": {},
+          "userLevel": {
+            "type": "integer"
+          },
+          "userAttr": {},
+          "isPrivilegeEscalation": {
+            "type": "string"
+          },
+          "passwordExpireTime": {
+            "type": "string"
+          },
+          "ipLoginRange": {
+            "type": "string"
+          },
+          "lockStatus": {
+            "type": "string"
+          },
+          "lockoutTime": {},
+          "dataIpRange": {},
+          "dataEventType": {},
+          "cardStr": {},
+          "userRoleKey": {
+            "type": "string"
+          },
+          "ancestorNames": {
+            "type": "string"
+          },
+          "comCode": {}
+        },
+        "required": [
+          "userId",
+          "tenantId",
+          "deptId",
+          "userName",
+          "idCard",
+          "idCardNum",
+          "mdmHId",
+          "nickName",
+          "userType",
+          "email",
+          "phonenumber",
+          "sex",
+          "avatar",
+          "status",
+          "loginIp",
+          "loginDate",
+          "remark",
+          "reason",
+          "userFlag",
+          "createTime",
+          "deptName",
+          "roles",
+          "roleIds",
+          "roleName",
+          "postIds",
+          "roleId",
+          "userLevel",
+          "userAttr",
+          "isPrivilegeEscalation",
+          "passwordExpireTime",
+          "ipLoginRange",
+          "lockStatus",
+          "lockoutTime",
+          "dataIpRange",
+          "dataEventType",
+          "cardStr",
+          "userRoleKey",
+          "ancestorNames",
+          "comCode"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "code": {
+      "type": "integer"
+    },
+    "msg": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "total",
+    "rows",
+    "code",
+    "msg"
+  ],
+  "additionalProperties": true,
+  "_meta": {
+    "generated_at": "2026-11-07T16:03:12",
+    "source_key": "system.user_list",
+    "generator": "plugins/casegen/gen_cases.py"
+  }
+}

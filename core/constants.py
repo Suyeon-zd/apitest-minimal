@@ -4,6 +4,7 @@
 # 新增标记时改这两处即可（selftest/test_core_unit.py::TestMarkers 会校验两者同步）。
 # 用例侧的白名单校验统一读这里，避免出现"三处各写一份、加标记漏改"的问题。
 #
-# auto: plugins/casegen/gen_cases.py 自动生成的用例标记，便于通过 -k "not auto" 排除自动用例
+# auto: plugins/casegen/gen_cases.py 自动生成的用例标记，便于通过 -m "not auto" 排除自动用例
 #      仅扩展集合，不改变现有语义；手写用例无需手动加该标记
-KNOWN_MARKERS = ("smoke", "regression", "p0", "p1", "auto")
+# skip: casegen 生成的骨架用例标记（缺 payload/危险接口/响应异常），补完后删除
+KNOWN_MARKERS = ("smoke", "regression", "p0", "p1", "auto", "skip")

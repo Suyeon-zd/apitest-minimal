@@ -1,0 +1,103 @@
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "integer"
+    },
+    "msg": {
+      "type": "string"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "menuId": {
+            "type": "integer"
+          },
+          "menuName": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "integer"
+          },
+          "orderNum": {
+            "type": "integer"
+          },
+          "path": {
+            "type": "string"
+          },
+          "component": {},
+          "queryParam": {},
+          "isFrame": {
+            "type": "string"
+          },
+          "isCache": {
+            "type": "string"
+          },
+          "menuType": {
+            "type": "string"
+          },
+          "visible": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "perms": {},
+          "icon": {
+            "type": "string"
+          },
+          "createDept": {
+            "type": "integer"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "menuId",
+          "menuName",
+          "parentId",
+          "orderNum",
+          "path",
+          "component",
+          "queryParam",
+          "isFrame",
+          "isCache",
+          "menuType",
+          "visible",
+          "status",
+          "perms",
+          "icon",
+          "createDept",
+          "remark",
+          "createTime",
+          "children"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "code",
+    "msg",
+    "data"
+  ],
+  "additionalProperties": true,
+  "_meta": {
+    "generated_at": "2026-11-07T16:03:12",
+    "source_key": "system.menu_list",
+    "generator": "plugins/casegen/gen_cases.py"
+  }
+}

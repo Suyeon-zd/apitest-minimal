@@ -16,10 +16,13 @@
 #
 # 安全策略（分级处理）：
 #   GET          → 真实调用（只读，安全）
-#   POST/PUT     → 清单给了 payload 才真实调用，否则生成带 TODO 的骨架用例
+#   非 GET       → 默认只读模式不调用，只生成带 TODO 的骨架用例；
+#                  确认接口无副作用后加 --allow-write 才真实调用
+#   POST/PUT     → 即使允许写，清单没给 payload 也仍只生成骨架用例
 #   DELETE       → 一律只生成骨架用例，绝不调用（防止污染业务数据）
 #   响应异常     → HTTP 非 200 / 响应非 JSON / 业务 code != 200 时降级为骨架用例 + TODO，
 #                  避免把错误响应的结构固化成断言
+#   骨架用例     → 自动打 skip 标记，留在套件里不会误跑成红灯
 import argparse
 import json
 import os
@@ -119,6 +122,70 @@ def _parse_query(payload: str) -> dict:
     return {k: v[0] for k, v in parse_qs(payload, keep_blank_values=True).items()}
 
 
+# ==================== 环境耦合检查 ====================
+
+VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+# 疑似环境耦合值：4 位以上数字 ID、UUID、16 位以上十六进制
+_HARDCODED_RE = re.compile(
+    r"^(?:\d{4,}|[0-9a-fA-F]{16,}|"
+    r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+)
+
+
+def _resolve_case_vars(text: str, case_vars: dict) -> str:
+    """把 ${VAR} 还原成 case_vars 中的真实值（真实调用用；变量不存在则原样保留）"""
+    if not isinstance(text, str) or "${" not in text:
+        return text
+    return VAR_RE.sub(lambda m: str(case_vars.get(m.group(1), m.group(0))), text)
+
+
+def substitute_case_vars(entry: ApiEntry, case_vars: dict) -> int:
+    """把与 case_vars 值完全一致的 query 参数 / 路径段替换成 ${KEY}
+
+    只替换配置里已有同名变量的值，不猜变量名；返回替换处数。
+    """
+    if not case_vars:
+        return 0
+    value_to_key = {}
+    for key, value in case_vars.items():
+        if isinstance(value, bool) or value in (None, ""):
+            continue
+        value_to_key.setdefault(str(value), str(key))
+
+    count = 0
+    segments = entry.path.split("/")
+    for i, seg in enumerate(segments):
+        if seg in value_to_key:
+            segments[i] = "${" + value_to_key[seg] + "}"
+            count += 1
+    entry.path = "/".join(segments)
+
+    if entry.payload and entry.method == "GET":
+        pairs = []
+        for pair in entry.payload.split("&"):
+            key, sep, value = pair.partition("=")
+            if sep and value in value_to_key:
+                value = "${" + value_to_key[value] + "}"
+                count += 1
+            pairs.append(f"{key}{sep}{value}" if sep else pair)
+        entry.payload = "&".join(pairs)
+    return count
+
+
+def find_hardcoded(entry: ApiEntry) -> list:
+    """列出仍疑似写死环境数据的参数/路径段（已被 case_vars 替换的不算）"""
+    hits = []
+    for seg in entry.path.split("/"):
+        if _HARDCODED_RE.match(seg):
+            hits.append(f"路径段 {seg}")
+    if entry.payload and entry.method == "GET":
+        for pair in entry.payload.split("&"):
+            key, sep, value = pair.partition("=")
+            if sep and _HARDCODED_RE.match(value):
+                hits.append(f"参数 {key}={value}")
+    return hits
+
+
 # ==================== 注册中心追加 ====================
 
 def _find_block_end(lines: list, module: str) -> int:
@@ -188,31 +255,40 @@ def append_endpoints(new_apis: list, ep_path: Path = None) -> Path:
 
 # ==================== 接口调用 ====================
 
-def call_interface(client: BaseClient, entry: ApiEntry, timeout):
+def call_interface(client: BaseClient, entry: ApiEntry, timeout,
+                   allow_write: bool = False, case_vars: dict = None):
     """按分级策略调用接口；返回 (resp, body_dict_or_None, skip_reason_or_None)
 
-    skip_reason 非 None 表示本次未真实调用（DELETE / 写接口缺 payload）。
+    skip_reason 非 None 表示本次未真实调用（危险接口 / 只读模式 / 写接口缺 payload）。
     """
     if entry.method == "DELETE":
         return None, None, "DELETE 危险接口未自动调用，请人工补充 payload 与断言"
-    if entry.method in ("POST", "PUT") and not entry.payload:
+    if entry.method != "GET" and not allow_write:
+        return None, None, (
+            f"{entry.method} 接口默认不调用（只读模式）；确认无副作用后加 --allow-write 重跑"
+        )
+    if entry.method != "GET" and not entry.payload:
         return None, None, f"{entry.method} 接口缺少 payload，请人工补充后重跑"
+
+    case_vars = case_vars or {}
+    path = _resolve_case_vars(entry.path, case_vars)
+    payload = _resolve_case_vars(entry.payload, case_vars) if entry.payload else None
 
     kwargs = {"timeout": tuple(timeout)}
     if entry.method == "GET":
-        kwargs["params"] = _parse_query(entry.payload) if entry.payload else None
+        kwargs["params"] = _parse_query(payload) if payload else None
     else:
         # 写接口：以 { 开头按 JSON body 发送，否则按原始文本（text/plain）发送
-        if entry.payload.lstrip().startswith("{"):
+        if payload.lstrip().startswith("{"):
             try:
-                kwargs["json"] = json.loads(entry.payload)
+                kwargs["json"] = json.loads(payload)
             except json.JSONDecodeError as e:
                 return None, None, f"payload 不是合法 JSON（{e}），请修正后重跑"
         else:
-            kwargs["data"] = entry.payload
+            kwargs["data"] = payload
             kwargs["headers"] = {"Content-Type": "text/plain"}
 
-    resp = client.request(entry.method, entry.path, **kwargs)
+    resp = client.request(entry.method, path, **kwargs)
     if resp.status_code != 200:
         return resp, None, f"HTTP 状态码 {resp.status_code}（非 200），响应已截断记录在 TODO 中"
     try:
@@ -228,6 +304,8 @@ def call_interface(client: BaseClient, entry: ApiEntry, timeout):
 
 def _type_name(value) -> str:
     """响应值 → field_type 断言的类型名（bool 必须先于 int 判断，bool 是 int 子类）"""
+    if value is None:
+        return "null"      # 不能落到 str：null 会变成"永远通过"或"必然失败"的错误断言
     if isinstance(value, bool):
         return "bool"
     if isinstance(value, int):
@@ -370,11 +448,12 @@ def _yaml_inline(value) -> str:
 
 
 def emit_case(entry: ApiEntry, struct: list, value_comments: list,
-              todo_lines: list = None, default_markers=None) -> str:
+              todo_lines: list = None, default_markers=None,
+              extra_markers=()) -> str:
     """单条用例 → YAML 文本块（紧凑内联风格，与手写模板一致）
 
-    - default_markers: 自动用例默认 markers（如 ['auto']）；已有 markers 时不强制覆盖
-    - 用例 yaml 文件级 markers 仍优先：人工显式标记会盖默认
+    - default_markers: 自动用例默认 markers（如 ['auto']）
+    - extra_markers: 追加标记（骨架用例传 ('skip',)，避免未完成的用例跑成红灯）
     """
     lines = [
         f"- api_name: \"{entry.key}（自动生成基线 {TODAY}）\"",
@@ -384,8 +463,12 @@ def emit_case(entry: ApiEntry, struct: list, value_comments: list,
         lines.append(f"  payload: {_yaml_inline(entry.payload)}")
     # 自动用例默认打 'auto' 标记（pytest.ini 已注册该 marker）：
     # 便于 CI 通过 -m "not auto" 单独跑手写用例，或反之
-    if default_markers:
-        lines.append(f"  markers: {_yaml_inline(list(default_markers))}")
+    markers = list(default_markers or [])
+    for m in extra_markers:
+        if m not in markers:
+            markers.append(m)
+    if markers:
+        lines.append(f"  markers: {_yaml_inline(markers)}")
     for todo in (todo_lines or []):
         lines.append(f"  # TODO: {todo}")
     lines.append("  assert:")
@@ -461,6 +544,8 @@ def _parse_args():
                         help="重新生成时整文件覆盖 <module>_gen.yaml（会自动备份到 <APITEST_OUTPUT_DIR>/gen_cases_backups/）")
     parser.add_argument("--dry-run", action="store_true",
                         help="只调用与预览，不写任何文件（endpoints.yaml/用例/schema 均不落盘）")
+    parser.add_argument("--allow-write", action="store_true",
+                        help="允许真实调用 POST/PUT/PATCH（默认只读：非 GET 只生成骨架用例）")
     parser.add_argument("--strict-schema", action="store_true",
                         help="生成 schema 时把 additionalProperties 设为 False（更严格结构约束；"
                              "默认 False 保持向后兼容）")
@@ -511,6 +596,19 @@ def main():
                 logger.warning("[%s] 清单中 method/path 与注册中心不一致，以注册中心为准", e.key)
             e.method, e.path = ep.method, ep.path
 
+    # ---- ②.5 参数环境耦合：能对上 case_vars 的自动换成 ${VAR}，其余告警 ----
+    case_vars = config.get("case_vars") or {}
+    substituted = 0
+    for e in entries:
+        substituted += substitute_case_vars(e, case_vars)
+        for hit in find_hardcoded(e):
+            logger.warning(
+                "[%s] 疑似写死环境数据（%s），建议改为 ${VAR} 并在 config/%s.yaml 的 case_vars 中定义",
+                e.key, hit, args.env,
+            )
+    if substituted:
+        logger.info("已将 %d 处与 case_vars 匹配的参数/路径段替换为 ${VAR}", substituted)
+
     # ---- ③ 登录 + 逐个调用 + 生成 ----
     auth = AuthManager(config)
     auth.login()
@@ -522,7 +620,9 @@ def main():
     for e in entries:
         logger.info("处理 %s %s %s", e.method, e.path, f"(payload={e.payload})" if e.payload else "")
         try:
-            resp, body, skip_reason = call_interface(client, e, timeout)
+            resp, body, skip_reason = call_interface(
+                client, e, timeout, allow_write=args.allow_write, case_vars=case_vars,
+            )
         except Exception as exc:   # 网络异常等：降级为骨架，不中断整批
             resp, body, skip_reason = None, None, f"请求异常: {exc}"
 
@@ -553,7 +653,11 @@ def main():
         )
         block = {
             "entry": e,
-            "text": emit_case(e, struct, value_comments, todo_lines, default_markers=default_markers),
+            "text": emit_case(
+                e, struct, value_comments, todo_lines, default_markers=default_markers,
+                # 骨架用例打 skip：人工补完前不会把套件跑成红灯
+                extra_markers=("skip",) if skip_reason else (),
+            ),
         }
         module_blocks.setdefault(e.module, []).append(block)
 
@@ -575,7 +679,7 @@ def main():
     print(f"生成完成：结构基线 {stats['generated']} 条 | 骨架(TODO) {stats['skeleton']} 条 | "
           f"涉及模块 {len(module_blocks)} 个")
     if stats["skeleton"]:
-        print("骨架用例含 TODO 注释（缺 payload/危险接口/异常响应），补齐后建议删除 api_name 中的标记重跑")
+        print("骨架用例已标记 skip（补完 payload/断言后删除 markers 中的 skip）")
     print("=" * 50)
 
 

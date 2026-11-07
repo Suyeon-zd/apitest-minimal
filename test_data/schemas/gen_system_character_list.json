@@ -1,0 +1,75 @@
+{
+  "type": "object",
+  "properties": {
+    "total": {
+      "type": "integer"
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "characterId": {
+            "type": "string"
+          },
+          "characterName": {
+            "type": "string"
+          },
+          "characterCode": {
+            "type": "string"
+          },
+          "characterIndex": {
+            "type": "string"
+          },
+          "sortNum": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "createBy": {},
+          "createTime": {
+            "type": "string"
+          },
+          "updateBy": {},
+          "updateTime": {},
+          "remark": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "characterId",
+          "characterName",
+          "characterCode",
+          "characterIndex",
+          "sortNum",
+          "kind",
+          "createBy",
+          "createTime",
+          "updateBy",
+          "updateTime",
+          "remark"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "code": {
+      "type": "integer"
+    },
+    "msg": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "total",
+    "rows",
+    "code",
+    "msg"
+  ],
+  "additionalProperties": true,
+  "_meta": {
+    "generated_at": "2026-11-07T16:03:12",
+    "source_key": "system.character_list",
+    "generator": "plugins/casegen/gen_cases.py"
+  }
+}

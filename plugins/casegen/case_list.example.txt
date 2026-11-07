@@ -5,7 +5,9 @@
 # 格式2（新接口）：                                    模块.名称 | METHOD | /path [| payload]
 #   - GET 的 payload 为 query string；POST 的 payload 为 JSON 串或原始文本
 #   - POST/PUT 不给 payload 时只生成骨架用例（TODO），DELETE 永远只生成骨架
-# 详见 README 第 8 节
+#   - 生成默认只读：非 GET 接口不会真实调用；确认无副作用后加 --allow-write
+#   - 骨架用例自动带 skip 标记，补完 payload/断言后删除
+# 详见 README 第 5 节
 
 system.org_list
 menu.get_routers
@@ -16,4 +18,4 @@ asset.instock_list | pageNum=1&pageSize=10
 # 新接口写法示例（放开后脚本会自动登记到 api/endpoints.yaml）：
 # asset.secret_create | POST | /asset/secret/create | {"name": "测试资产"}
 
-asset.dev_type_distribution | GET | deptId=100&status=%E5%9C%A8%E7%94%A8&currentLevel=false
+asset.dev_type_distribution | GET | /asset/dashboard/devTypeDistribution | deptId=${DEPT_ID}&status=%E5%9C%A8%E7%94%A8&currentLevel=false

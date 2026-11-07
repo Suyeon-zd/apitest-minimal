@@ -1,0 +1,89 @@
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "integer"
+    },
+    "msg": {
+      "type": "string"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "integer"
+          },
+          "roleName": {
+            "type": "string"
+          },
+          "roleKey": {
+            "type": "string"
+          },
+          "roleSort": {
+            "type": "integer"
+          },
+          "dataScope": {
+            "type": "string"
+          },
+          "menuCheckStrictly": {
+            "type": "boolean"
+          },
+          "deptCheckStrictly": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "remark": {},
+          "reason": {
+            "type": "string"
+          },
+          "roleFlag": {},
+          "createTime": {
+            "type": "string"
+          },
+          "parentId": {},
+          "flag": {
+            "type": "boolean"
+          },
+          "menuIds": {},
+          "superAdmin": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "roleId",
+          "roleName",
+          "roleKey",
+          "roleSort",
+          "dataScope",
+          "menuCheckStrictly",
+          "deptCheckStrictly",
+          "status",
+          "remark",
+          "reason",
+          "roleFlag",
+          "createTime",
+          "parentId",
+          "flag",
+          "menuIds",
+          "superAdmin"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "code",
+    "msg",
+    "data"
+  ],
+  "additionalProperties": true,
+  "_meta": {
+    "generated_at": "2026-11-07T16:03:12",
+    "source_key": "system.list_v2",
+    "generator": "plugins/casegen/gen_cases.py"
+  }
+}

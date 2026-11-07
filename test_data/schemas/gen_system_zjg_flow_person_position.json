@@ -1,0 +1,75 @@
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "integer"
+    },
+    "msg": {
+      "type": "string"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dictCode": {
+            "type": "integer"
+          },
+          "dictSort": {
+            "type": "integer"
+          },
+          "dictLabel": {
+            "type": "string"
+          },
+          "dictValue": {
+            "type": "string"
+          },
+          "dictType": {
+            "type": "string"
+          },
+          "cssClass": {
+            "type": "string"
+          },
+          "listClass": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "string"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "status": {}
+        },
+        "required": [
+          "dictCode",
+          "dictSort",
+          "dictLabel",
+          "dictValue",
+          "dictType",
+          "cssClass",
+          "listClass",
+          "isDefault",
+          "remark",
+          "createTime",
+          "status"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "code",
+    "msg",
+    "data"
+  ],
+  "additionalProperties": true,
+  "_meta": {
+    "generated_at": "2026-11-07T16:03:12",
+    "source_key": "system.zjg_flow_person_position",
+    "generator": "plugins/casegen/gen_cases.py"
+  }
+}

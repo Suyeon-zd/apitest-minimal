@@ -1,0 +1,145 @@
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "integer"
+    },
+    "msg": {
+      "type": "string"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "createDept": {
+            "type": "integer"
+          },
+          "createBy": {
+            "type": "integer"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "updateBy": {
+            "type": "integer"
+          },
+          "updateTime": {
+            "type": "string"
+          },
+          "menuId": {
+            "type": "integer"
+          },
+          "parentId": {
+            "type": "integer"
+          },
+          "menuName": {
+            "type": "string"
+          },
+          "orderNum": {
+            "type": "integer"
+          },
+          "path": {
+            "type": "string"
+          },
+          "component": {},
+          "queryParam": {
+            "type": "string"
+          },
+          "isFrame": {
+            "type": "string"
+          },
+          "isCache": {
+            "type": "string"
+          },
+          "menuType": {
+            "type": "string"
+          },
+          "visible": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "perms": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "parentName": {},
+          "children": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "routeName": {
+            "type": "string"
+          },
+          "routerPath": {
+            "type": "string"
+          },
+          "componentInfo": {
+            "type": "string"
+          },
+          "menuFrame": {
+            "type": "boolean"
+          },
+          "innerLink": {
+            "type": "boolean"
+          },
+          "parentView": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "createDept",
+          "createBy",
+          "createTime",
+          "updateBy",
+          "updateTime",
+          "menuId",
+          "parentId",
+          "menuName",
+          "orderNum",
+          "path",
+          "component",
+          "queryParam",
+          "isFrame",
+          "isCache",
+          "menuType",
+          "visible",
+          "status",
+          "perms",
+          "icon",
+          "remark",
+          "parentName",
+          "children",
+          "routeName",
+          "routerPath",
+          "componentInfo",
+          "menuFrame",
+          "innerLink",
+          "parentView"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "code",
+    "msg",
+    "data"
+  ],
+  "additionalProperties": true,
+  "_meta": {
+    "generated_at": "2026-11-07T16:03:12",
+    "source_key": "system.parent_list",
+    "generator": "plugins/casegen/gen_cases.py"
+  }
+}

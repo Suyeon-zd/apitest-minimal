@@ -1,0 +1,123 @@
+{
+  "type": "object",
+  "properties": {
+    "total": {
+      "type": "integer"
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "createDept": {},
+          "createBy": {},
+          "createTime": {
+            "type": "string"
+          },
+          "updateBy": {},
+          "updateTime": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {},
+          "position": {},
+          "email": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "sex": {
+            "type": "string"
+          },
+          "idCard": {},
+          "userLevel": {
+            "type": "string"
+          },
+          "delFlag": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "deptId": {
+            "type": "string"
+          },
+          "deptName": {
+            "type": "string"
+          },
+          "remark": {},
+          "userAttr": {},
+          "userId": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "no": {},
+          "nickName": {
+            "type": "string"
+          },
+          "comName": {
+            "type": "string"
+          },
+          "orgDeptId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createDept",
+          "createBy",
+          "createTime",
+          "updateBy",
+          "updateTime",
+          "id",
+          "name",
+          "type",
+          "position",
+          "email",
+          "phoneNumber",
+          "sex",
+          "idCard",
+          "userLevel",
+          "delFlag",
+          "tenantId",
+          "deptId",
+          "deptName",
+          "remark",
+          "userAttr",
+          "userId",
+          "status",
+          "no",
+          "nickName",
+          "comName",
+          "orgDeptId"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "code": {
+      "type": "integer"
+    },
+    "msg": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "total",
+    "rows",
+    "code",
+    "msg"
+  ],
+  "additionalProperties": true,
+  "_meta": {
+    "generated_at": "2026-11-07T16:03:12",
+    "source_key": "system.org_person_list",
+    "generator": "plugins/casegen/gen_cases.py"
+  }
+}
