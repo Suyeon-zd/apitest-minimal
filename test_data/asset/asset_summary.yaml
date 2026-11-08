@@ -1,95 +1,45 @@
 # test_data/asset/asset_summary.yaml
 # ============================================================
-# 组织列表 system.org_list —— 全量断言模板（紧凑格式）
-# 覆盖 10 种断言类型；作为项目内其他接口用例的断言参考模板
-# 注：迁移自历史别名 orgList.get_orgList（path / method 保持完全一致）
+# 组织列表 system.org_list —— 断言类型模板（每种类型一条示例）
+#
+# 断言分层原则：
+#   契约层（schema）    字段存在 + 类型 + 嵌套结构，一条顶几十条 exists/field_type
+#   业务层（code）      接口是否成功
+#   语义层（list_len / each / contains）数据本身是否符合业务含义
+#
+# 单字段的 exists / field_type 只在两种情况下写：
+#   1. null 值字段（schema 对 null 不约束类型）
+#   2. 该字段有独立业务含义，需要单独失败定位
 # ============================================================
 
-- api_name: "orgList - 默认查询（全量断言模板）"
+- api_name: "orgList - 默认查询（断言类型模板）"
   api: system.org_list
-  # 注意：请求参数必须写在用例的 payload 里（注册中心只登记 method/path/headers/body_type）
   payload: "parentId=0&type=org"
   markers: [smoke, p0]
   assert:
-    # ---------- 1. HTTP 层 ----------
+    # ---------- HTTP 层 ----------
     - {type: status_code, expected: 200}
     - {type: header, field: "Content-Type", operator: "contains", expected: "application/json"}
 
-    # ---------- 2. 业务响应码 ----------
+    # ---------- 业务层：成功信号 ----------
     - {type: json_path, path: "code", expected: 200}
-    - {type: json_path, path: "msg", expected: "操作成功"}
+    # 文案可能微调，用 contains 而不是精确相等，避免无意义的红灯
+    - {type: contains, path: "msg", expected: "成功"}
 
-    # ---------- 3. data 结构 ----------
-    - {type: exists, path: "data", expected: true}
-    - {type: field_type, path: "data", expected: "list"}
+    # ---------- 契约层：一条断言覆盖全部字段的存在性与类型 ----------
+    - {type: schema, schema_file: "gen_system_org_list.json"}
+
+    # ---------- 语义层：数据本身是否合理 ----------
     - {type: list_len, path: "data", operator: "gte", expected: 1}
-    - {type: field_type, path: "data.0", expected: "dict"}
-
-    # ---------- 4. 必填字段存在性 ----------
-    - {type: exists, path: "data.0.deptId", expected: true}
-    - {type: exists, path: "data.0.deptName", expected: true}
-    - {type: exists, path: "data.0.parentId", expected: true}
-    - {type: exists, path: "data.0.parentName", expected: true}
-    - {type: exists, path: "data.0.ancestors", expected: true}
-    - {type: exists, path: "data.0.type", expected: true}
-    - {type: exists, path: "data.0.deptCategory", expected: true}
-    - {type: exists, path: "data.0.tenantId", expected: true}
-    - {type: exists, path: "data.0.id", expected: true}
-    - {type: exists, path: "data.0.label", expected: true}
-    - {type: exists, path: "data.0.leaf", expected: true}
-    - {type: exists, path: "data.0.orderNum", expected: true}
-    - {type: exists, path: "data.0.orgManLevel", expected: true}
-    - {type: exists, path: "data.0.status", expected: true}
-    - {type: exists, path: "data.0.createTime", expected: true}
-    - {type: exists, path: "data.0.updateTime", expected: true}
-
-    # ---------- 5. 关键字段值 ----------
-    - {type: json_path, path: "data.0.deptId", expected: 100}
-    - {type: json_path, path: "data.0.parentId", expected: 0}
-    - {type: json_path, path: "data.0.ancestors", expected: "0"}
-    - {type: json_path, path: "data.0.type", expected: "org"}
-    - {type: json_path, path: "data.0.deptCategory", expected: "0000"}
-    - {type: json_path, path: "data.0.tenantId", expected: "000000"}
-    - {type: json_path, path: "data.0.status", expected: "0"}
-    - {type: json_path, path: "data.0.id", expected: 100}
-    - {type: json_path, path: "data.0.leaf", expected: false}
-    - {type: json_path, path: "data.0.orderNum", expected: 0}
-    - {type: json_path, path: "data.0.orgManLevel", expected: "1"}
-
-    # ---------- 6. 字段类型 ----------
-    - {type: field_type, path: "data.0.deptId", expected: "int"}
-    - {type: field_type, path: "data.0.parentId", expected: "int"}
-    - {type: field_type, path: "data.0.id", expected: "int"}
-    - {type: field_type, path: "data.0.orderNum", expected: "int"}
-    - {type: field_type, path: "data.0.deptName", expected: "str"}
-    - {type: field_type, path: "data.0.deptCategory", expected: "str"}
-    - {type: field_type, path: "data.0.type", expected: "str"}
-    - {type: field_type, path: "data.0.tenantId", expected: "str"}
-    - {type: field_type, path: "data.0.ancestors", expected: "str"}
-    - {type: field_type, path: "data.0.status", expected: "str"}
-    - {type: field_type, path: "data.0.orgManLevel", expected: "str"}
-    - {type: field_type, path: "data.0.label", expected: "str"}
-    - {type: field_type, path: "data.0.leaf", expected: "bool"}
-    - {type: field_type, path: "data.0.createTime", expected: "str"}
-    - {type: field_type, path: "data.0.updateTime", expected: "str"}
-
-    # ---------- 7. null 值字段 ----------
-    - {type: json_path, path: "data.0.parentName", expected: null}
-    - {type: json_path, path: "data.0.email", expected: null}
-    - {type: json_path, path: "data.0.leader", expected: null}
-    - {type: json_path, path: "data.0.leaderName", expected: null}
-    - {type: json_path, path: "data.0.phone", expected: null}
-    - {type: json_path, path: "data.0.treeAddExtra", expected: null}
-
-    # ---------- 8. 字符串包含 ----------
-    - {type: contains, path: "data.0.deptName", expected: "中国"}
-    - {type: contains, path: "data.0.label", expected: "中国"}
-    - {type: contains, path: "data.0.createTime", expected: "-"}
-    - {type: contains, path: "data.0.updateTime", expected: ":"}
-
-    # ---------- 9. 数组批量断言 ----------
     - {type: each, path: "data", field: "type", expected: "org"}
-    - {type: each, path: "data", field: "status", expected: "0"}
 
-    # ---------- 10. Schema 结构校验 ----------
-    - {type: schema, schema_file: "org_list.json"}
+    # ---------- 单字段精确断言（只用于稳定且有业务含义的值） ----------
+    - {type: json_path, path: "data.0.parentId", expected: 0}
+
+    # ---------- null 字段：schema 不约束 null 的类型，必须成对断言 ----------
+    # 单独用 json_path expected: null 是恒真的（字段被删除也会通过），不要这么写
+    - {type: exists, path: "data.0.parentName", expected: true}
+    - {type: field_type, path: "data.0.parentName", expected: "null"}
+
+    # ---------- 性能 SLA（有明确要求时再加） ----------
+    - {type: response_time, operator: "lte", expected: 2}

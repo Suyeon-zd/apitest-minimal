@@ -1,4 +1,6 @@
 # selftest/test_casegen_unit.py - casegen 生成器的离线单测（不联网、不写业务目录）
+import json
+
 import pytest
 
 pytest.importorskip("plugins.casegen.gen_cases")
@@ -56,6 +58,26 @@ def test_null_data_assertion_is_typed_null(tmp_path):
     assert {"type": "schema", "schema_file": schema_file} in struct
 
 
+def test_schema_replaces_per_field_assertions(tmp_path):
+    """字段存在性/类型交给 schema，不再逐字段展开 exists/field_type"""
+    body = {"code": 200, "msg": "ok",
+            "data": [{"id": 1, "name": "a", "parentId": None}]}
+    struct, _, schema_file = g.build_assertions(
+        FakeResponse(body), body, "system.list", tmp_path, write=True,
+    )
+    # 除 null 字段外，不再有 data.0.* 的 exists / field_type
+    per_field = {a["path"] for a in struct
+                 if a["type"] in ("exists", "field_type")
+                 and a.get("path", "").startswith("data.0")}
+    assert per_field == {"data.0.parentId"}   # parentId 为 null，需要成对断言
+    # 非空列表由 list_len 保证（schema 的 items 管不到空数组）
+    assert {"type": "list_len", "path": "data", "operator": "gte", "expected": 1} in struct
+    # null 字段 schema 不约束类型，仍需显式断言
+    assert {"type": "exists", "path": "data.0.parentId", "expected": True} in struct
+    assert {"type": "field_type", "path": "data.0.parentId", "expected": "null"} in struct
+    assert {"type": "schema", "schema_file": schema_file} in struct
+
+
 # ========== 环境耦合：能对上 case_vars 的自动替换 ==========
 def test_substitute_case_vars_in_path_and_query():
     entry = _entry(path="/system/dept/100/detail", payload="deptNo=100&pageNum=1")
@@ -109,3 +131,39 @@ def test_emit_case_skeleton_has_skip_marker():
     )
     assert "markers: [auto, skip]" in text
     assert "# TODO" in text
+
+
+# ========== 离线：只有响应 JSON ==========
+def test_generate_from_json_is_offline(tmp_path):
+    """接口暂时调不通时，用开发给的响应样例直接生成 schema"""
+    resp = tmp_path / "resp.json"
+    resp.write_text(
+        '{"code": 200, "msg": "ok", "data": [{"id": 1, "name": "a", "extra": null}]}',
+        encoding="utf-8",
+    )
+    out = tmp_path / "schemas"
+    out.mkdir()
+
+    name = g.generate_from_json(resp, "asset.demo_detail", out)
+
+    assert name == "gen_asset_demo_detail.json"
+    schema = json.loads((out / name).read_text(encoding="utf-8"))
+    assert schema["type"] == "object"
+    assert "data" in schema["required"]
+
+
+def test_generate_from_json_rejects_key_without_module(tmp_path):
+    resp = tmp_path / "resp.json"
+    resp.write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError, match="模块.接口名"):
+        g.generate_from_json(resp, "NoModule", tmp_path)
+
+
+def test_from_json_requires_key():
+    with pytest.raises(SystemExit):
+        g._parse_args(["--from-json", "resp.json"])
+
+
+def test_from_json_does_not_need_list():
+    args = g._parse_args(["--from-json", "resp.json", "--key", "asset.demo"])
+    assert (args.from_json, args.key, args.list) == ("resp.json", "asset.demo", None)

@@ -1,14 +1,19 @@
 # plugins/casegen/gen_cases.py - 测试用例自动生成器（契约快照式）
 #
 # 思路：接口清单 txt → 逐个真实调用 → 解析响应结构 → 自动生成基线用例 YAML。
-# 与手写用例（如 test_data/asset/asset_summary.yaml）互补：生成器负责"结构层"基线，
-# 值层断言以注释保留，人工确认后放开。
+# 与手写用例（如 test_data/asset/asset_summary.yaml）互补：生成器负责"结构层"基线。
+# 结构层只用一条 schema 断言覆盖全部字段的存在性与类型，不逐字段展开 exists/field_type
+# （逐字段断言与 schema 完全重复，只会让用例难以阅读与维护）。
 #
 # 用法：
 #   python -m plugins.casegen.gen_cases --list plugins/casegen/case_list.txt            # 正式生成
 #   python -m plugins.casegen.gen_cases --list plugins/casegen/case_list.txt --dry-run  # 只预览不写文件
 #   python -m plugins.casegen.gen_cases --list plugins/casegen/case_list.txt --force    # 整文件覆盖重新生成
 #   python -m plugins.casegen.gen_cases --list plugins/casegen/case_list.txt --env staging  # 指定环境
+#   python -m plugins.casegen.gen_cases --from-json resp.json --key asset.demo_detail  # 离线：只有响应 JSON
+#
+# 离线模式（--from-json）用于"接口已变更但暂时调不通"：不登录、不发请求，
+# 直接按开发提供的响应样例生成 schema，并打印可直接粘贴的断言块。
 #
 # 清单格式（每行一个接口，# 开头为注释）：
 #   格式1（推荐）：已在 api/endpoints.yaml 登记的接口：  模块.名称 [| payload]
@@ -388,7 +393,13 @@ def build_schema_file(key: str, body, schemas_dir: Path, strict=False, write: bo
 
 def build_assertions(resp, body, key: str, schemas_dir: Path,
                      write: bool = True, strict: bool = False):
-    """结构层断言（生效）+ 值层断言（注释保留）；返回 (struct_list, value_comment_list, schema_file)
+    """结构层断言（生效）；返回 (struct_list, value_comment_list, schema_file)
+
+    结构层只输出「一条 schema + 少量业务语义断言」：
+    - 字段存在性与类型由 schema 的 required/properties 一次覆盖，不再逐字段展开
+      exists/field_type —— 逐字段断言与 schema 完全重复，只会让用例难读、难维护；
+    - schema 对 null 值字段不约束类型（写成 {}），这类字段单独补 exists + field_type: null；
+    - data 为非空列表时补 list_len gte 1：schema 无法保证数组非空，空数组会让契约校验假通过。
 
     - strict: 透传给 build_schema_file，控制生成 schema 的 additionalProperties 默认值
     """
@@ -406,30 +417,26 @@ def build_assertions(resp, body, key: str, schemas_dir: Path,
             struct.append({"type": "json_path", "path": "msg", "expected": body["msg"]})
         if "data" in body:
             data = body["data"]
-            struct.append({"type": "exists", "path": "data", "expected": True})
-            struct.append({"type": "field_type", "path": "data", "expected": _type_name(data)})
-
-            # 取样本对象展开第一层字段（列表取首个元素，字典取自身）
-            if isinstance(data, list) and data and isinstance(data[0], dict):
-                sample, prefix = data[0], "data.0"
-                struct.append({"type": "field_type", "path": prefix, "expected": "dict"})
-                if write:
-                    value_comments.append({"type": "list_len", "path": "data",
-                                           "operator": "gte", "expected": len(data)})
+            sample, prefix = None, None
+            if isinstance(data, list):
+                if data and isinstance(data[0], dict):
+                    # schema 的 items 只约束元素结构，不保证数组非空
+                    struct.append({"type": "list_len", "path": "data",
+                                   "operator": "gte", "expected": 1})
+                    sample, prefix = data[0], "data.0"
             elif isinstance(data, dict):
                 sample, prefix = data, "data"
-            else:
-                sample, prefix = None, None
+            elif data is None:
+                # null 字段在 schema 里是 {}（不约束类型），必须显式断言"存在且为 null"
+                struct.append({"type": "exists", "path": "data", "expected": True})
+                struct.append({"type": "field_type", "path": "data", "expected": "null"})
 
             if sample is not None:
                 for k, v in sample.items():
-                    p = f"{prefix}.{k}"
-                    struct.append({"type": "exists", "path": p, "expected": True})
                     if v is None:
-                        # null 值类型不稳定：结构层只断言存在，类型/null 断言下沉到值层
-                        value_comments.append({"type": "json_path", "path": p, "expected": None})
-                    else:
-                        struct.append({"type": "field_type", "path": p, "expected": _type_name(v)})
+                        p = f"{prefix}.{k}"
+                        struct.append({"type": "exists", "path": p, "expected": True})
+                        struct.append({"type": "field_type", "path": p, "expected": "null"})
         if write:
             schema_file = build_schema_file(key, body, schemas_dir, strict=strict, write=write)
             if schema_file:
@@ -527,15 +534,15 @@ def save_module_cases(module: str, blocks: list, out_dir: Path, force: bool) -> 
 
 def _file_header() -> str:
     return (f"# {TODAY} 由 plugins/casegen/gen_cases.py 自动生成（契约快照基线用例）\n"
-            f"# 结构层断言已生效；值层断言以注释保留，确认后放开\n"
+            f"# 结构层：一条 schema 覆盖字段存在性与类型；null 字段补 exists + field_type\n"
             f"# 重新生成默认跳过已存在的 api；--force 整文件覆盖（会丢弃人工修改）")
 
 
 # ==================== 主流程 ====================
 
-def _parse_args():
+def _parse_args(argv=None):
     parser = argparse.ArgumentParser(description="契约快照式测试用例生成器：清单→调用→解析→生成 YAML")
-    parser.add_argument("--list", required=True, help="接口清单 txt 路径")
+    parser.add_argument("--list", help="接口清单 txt 路径（在线生成；与 --from-json 二选一）")
     parser.add_argument("--env", default="dev", help="环境：dev/staging/prod，默认 dev")
     parser.add_argument("--out", default="test_data", help="用例输出根目录，默认 test_data")
     parser.add_argument("--schemas-dir", default="test_data/schemas",
@@ -552,18 +559,81 @@ def _parse_args():
     parser.add_argument("--default-markers", default="auto",
                         help="自动生成用例默认追加的 markers（逗号分隔，默认 'auto'；"
                              "设为空字符串则不打默认 marker）")
-    return parser.parse_args()
+    parser.add_argument("--from-json", metavar="FILE",
+                        help="离线生成 schema：直接读取响应 JSON 文件，不登录、不调用接口（需配合 --key）")
+    parser.add_argument("--key",
+                        help="配合 --from-json：模块.接口名，决定 schema 文件名 gen_<key>.json")
+    args = parser.parse_args(argv)
+    if args.from_json and not args.key:
+        parser.error("--from-json 需要同时指定 --key（如 asset.demo_detail）")
+    if not args.from_json and not args.list:
+        parser.error("需要 --list（在线生成），或 --from-json + --key（离线生成 schema）")
+    return args
 
 
-def main():
-    args = _parse_args()
+# ==================== 离线生成（只有响应 JSON） ====================
+
+class _JsonSnapshot:
+    """把本地 JSON 包装成 build_assertions 需要的响应对象（不联网）"""
+
+    def __init__(self, body):
+        self._body = body
+        self.status_code = 200
+        self.headers = {"Content-Type": "application/json"}
+
+    def json(self):
+        return self._body
+
+
+def generate_from_json(json_path: Path, key: str, schemas_dir: Path, strict: bool = False) -> str:
+    """响应 JSON 文件 → <schemas_dir>/gen_<key>.json，并打印可直接粘贴的断言块
+
+    适用场景：接口已变更、开发只给了新响应样例，但环境暂时调不通。
+    不登录、不发请求；接口恢复后再用 --list 跑一次在线生成即可。
+    """
+    if "." not in key:
+        raise ValueError(f"--key 必须是 模块.接口名（如 asset.demo_detail），当前: {key!r}")
+    if not json_path.exists():
+        raise FileNotFoundError(f"响应 JSON 文件不存在: {json_path}")
+    try:
+        body = json.loads(json_path.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError as e:
+        raise ValueError(f"{json_path} 不是合法 JSON: {e}")
+    if not isinstance(body, dict):
+        raise ValueError("响应根节点必须是 JSON 对象（{...}），否则无法生成有意义的 schema")
+
+    schemas_dir.mkdir(parents=True, exist_ok=True)
+    struct, _, schema_file = build_assertions(
+        _JsonSnapshot(body), body, key, schemas_dir, write=True, strict=strict,
+    )
+    if not schema_file:
+        raise ValueError("未能生成 schema（响应体为空对象？）")
+
+    logger.info("已生成 Schema: %s", schemas_dir / schema_file)
+    print("\n将以下断言粘贴到对应用例：")
+    print("  assert:")
+    for a in struct:
+        print(f"    - {_yaml_inline(a)}")
+    return schema_file
+
+
+def main(argv=None):
+    args = _parse_args(argv)
+    schemas_dir = Path(args.schemas_dir)
+    schemas_dir = schemas_dir if schemas_dir.is_absolute() else PROJECT_ROOT / schemas_dir
+
+    # ---- 离线模式：只有响应 JSON，不登录、不请求接口 ----
+    if args.from_json:
+        json_path = Path(args.from_json)
+        json_path = json_path if json_path.is_absolute() else PROJECT_ROOT / json_path
+        generate_from_json(json_path, args.key, schemas_dir, strict=args.strict_schema)
+        return
+
     list_path = Path(args.list)
     if not list_path.is_absolute():
         list_path = PROJECT_ROOT / list_path
     out_dir = Path(args.out)
     out_dir = out_dir if out_dir.is_absolute() else PROJECT_ROOT / out_dir
-    schemas_dir = Path(args.schemas_dir)
-    schemas_dir = schemas_dir if schemas_dir.is_absolute() else PROJECT_ROOT / schemas_dir
 
     entries = parse_list_file(list_path)
     registry = EndpointRegistry.load()

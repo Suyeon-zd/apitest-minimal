@@ -174,14 +174,32 @@ POST 默认发 JSON：
 | `schema` | JSON Schema 结构校验（文件放 `test_data/schemas/`） | `{type: schema, schema_file: user.json}` |
 | `response_time` | 响应耗时 SLA（秒） | `{type: response_time, operator: lte, expected: 2}` |
 
-完整范例见 [asset_summary.yaml](test_data/asset/asset_summary.yaml)，一条用例覆盖全部断言类型，可当模板复制。
+完整范例见 [asset_summary.yaml](test_data/asset/asset_summary.yaml)，每条断言一行示例，可当模板复制。
+
+> **结构校验优先用 `schema`。** schema 文件里已有 `required`（字段存在）和 `properties.type`（字段类型），
+> 不要再逐字段写 `exists` / `field_type` —— 同一件事做几十遍，只会让用例变长、变难读，接口改字段时还要同步改几十行。
+
+**断言分层（一条用例 4~8 条是健康区间）**
+
+| 层次 | 目的 | 推荐断言 | 条数 |
+|---|---|---|---|
+| 契约层 | 字段是否齐全、类型是否正确、嵌套结构 | `schema` | 1 |
+| 业务层 | 接口是否成功 | `status_code` + `json_path code` | 2 |
+| 语义层 | 数据是否符合业务含义 | `list_len` / `each` / `contains` | 1~3 |
+| 值层 | 关键值是否正确 | `json_path`（只用于稳定且有业务含义的值） | 0~2 |
+
+三个必须知道的细节：
+
+- `exists` + `field_type` 只在两种情况单独写：**null 值字段**（schema 对 null 不约束类型）、**需要独立定位的关键字段**；
+- `each` 遇到空列表会直接通过，所以非空列表必须配一条 `list_len ... gte 1` 兜底；
+- `json_path` 期望 `null` 是**恒真断言**（字段被删除时取值同样是 `None`），要表达"字段存在且为 null"，用 `exists` + `field_type: null` 成对写。
 
 ### 2.6 写完后自查 6 项
 
 1. 文件扩展名是 `.yaml`（`.yml` 不会被扫描），顶层是列表；
 2. `api_name` 全局唯一；
 3. `api` 已在 `api/endpoints.yaml` 登记；
-4. `assert` 至少一条强断言（不是只有 `status_code`）；
+4. `assert` 至少一条强断言（不是只有 `status_code`）；结构校验用一条 `schema`，不要逐字段展开 `exists` / `field_type`；
 5. `markers` 只用 `pytest.ini` 注册过的值；
 6. 跑一次 `python -m pytest --collect-only`，数量符合预期、没有 ERROR。
 
@@ -199,12 +217,13 @@ POST 默认发 JSON：
 
 不要跳过 L1 直接跑 L3，否则框架 bug 会表现成“接口全挂”，排查方向会跑偏。
 
-**L1 明细（当前 85 条）**
+**L1 明细（当前 104 条）**
 
 | 文件 | 条数 | 覆盖 |
 |---|---|---|
 | [test_core_unit.py](selftest/test_core_unit.py) | 71 | 断言引擎、路径取值、变量替换、配置插值、注册中心、脱敏日志、用例模型 |
 | [test_http_heal_unit.py](selftest/test_http_heal_unit.py) | 7 | 重试退避、401 重登、鉴权失败开关 |
+| [test_casegen_unit.py](selftest/test_casegen_unit.py) | 19 | 类型推断、schema 断言生成、环境变量替换、只读保护、骨架 skip、JSON 离线转 schema |
 | [test_assets.py](selftest/test_assets.py) | 7 | 注册中心、3 个环境配置、全部用例可加载、schema 文件、积木清单 |
 
 `test_assets.py` 与业务入口共用 [case_loader.py](core/case_loader.py) 的 `load_cases()`，所以“自检通过的资产”就是“真正执行时加载的资产”。
@@ -267,7 +286,7 @@ python -m pytest --env=staging          # 切环境
 1. **用例总数**是否等于预期（与上次相比有无意外增减）；
 2. **失败是否集中**在同一接口/模块（集中 = 环境或该模块变更；分散 = 框架或数据问题）；
 3. **断言是否真的校验业务**：只有 `status_code` + `code` 的用例属于弱校验，容易假通过；
-4. **自动生成用例的 TODO / 值层断言**是否已处理（`# TODO:` 表示当时调用异常；值层断言默认是注释）；
+4. **自动生成用例的 TODO** 是否已处理（`# TODO:` 表示当时调用异常，用例已自动标 `skip`）；
 5. **skipped 是否合理**：`depends_on` 前置失败会级联 skip，不要当成通过；
 6. **响应时间**是否异常（`response_time` 断言或报告耗时）；
 7. **日志脱敏**是否生效（`run.log` 不应出现完整 Token / 密码）；
@@ -356,10 +375,10 @@ payload: deptId=${DEPT_ID}&pageNum=1
 接口清单 case_list_from_har.txt
     │  ★ 人工审阅：删危险接口、把易变 ID 换成 ${VAR}
     ▼
-gen_cases.py：真实调用 → 结构层断言 + JSON Schema
+gen_cases.py：真实调用 → 一条 schema（字段存在 + 类型）+ 业务语义断言
     ▼
 test_data/<模块>/<模块>_gen.yaml + test_data/schemas/gen_*.json
-    │  ★ 人工收尾：markers、值层断言、TODO 骨架
+    │  ★ 人工收尾：markers、TODO 骨架、schema 裁剪
     ▼
 python -m pytest -m auto
 ```
@@ -452,7 +471,9 @@ python -m plugins.casegen.gen_cases --list ... --strict-schema  # additionalProp
 
 | 参数 | 默认 | 说明 |
 |---|---|---|
-| `--list` | 必填 | 接口清单 txt |
+| `--list` | 见下 | 接口清单 txt（在线模式；与 `--from-json` 二选一） |
+| `--from-json` | — | 离线模式：读响应 JSON 文件生成 schema，不登录、不请求接口 |
+| `--key` | — | 配合 `--from-json`：`模块.接口名`，决定 schema 文件名 |
 | `--env` | `dev` | 使用 `config/<env>.yaml` 的 base_url / 凭据 / timeout |
 | `--out` | `test_data` | 用例输出根目录 |
 | `--schemas-dir` | `test_data/schemas` | Schema 输出目录 |
@@ -489,6 +510,35 @@ test_data/schemas/gen_<key>.json          # 响应结构 Schema（含 _meta）
 - `--force` 整文件重写，旧文件备份到 `output/gen_cases_backups/`；
 - 只重生成单个接口：从 `_gen.yaml` 删掉该条，再跑一次（不加 `--force`）。
 
+**接口暂时调不通：只有响应 JSON 时（离线模式）**
+
+开发给了新的响应样例、但环境里接口还没部署或调不通时，不必等接口可用：
+
+```powershell
+# 1) F12 → Response → Copy response，存为 resp.json（纯 JSON，不要带 DevTools 包装）
+# 2) 生成 schema：不登录、不请求接口
+python -m plugins.casegen.gen_cases --from-json resp.json --key asset.demo_detail
+```
+
+输出：
+
+```text
+已生成 Schema: test_data/schemas/gen_asset_demo_detail.json
+
+将以下断言粘贴到对应用例：
+  assert:
+    - {expected: 200, type: status_code}
+    - {expected: 200, path: code, type: json_path}
+    - {expected: true, path: data.remark, type: exists}
+    - {expected: 'null', path: data.remark, type: field_type}
+    - {schema_file: gen_asset_demo_detail.json, type: schema}
+```
+
+- `--key` 决定文件名（`gen_<key>.json`），必须是 `模块.接口名`；
+- 只写 schema 并打印断言块，不改 `endpoints.yaml`、不生成用例 YAML；
+- 接口恢复后建议再用 `--list` 跑一次在线生成，确认实际结构与样例一致；
+- 临时的 `resp.json` 用完及时删除（含业务数据，且 `*.json` 未被 gitignore 忽略）。
+
 ### 5.7 第五步：生成后收尾（必须做）
 
 生成结果只是“结构基线”，直接全量跑通常要调整：
@@ -497,7 +547,7 @@ test_data/schemas/gen_<key>.json          # 响应结构 Schema（含 _meta）
 2. **api_name**：它是 pytest id 和 `depends_on` 的引用键，改名要同步检查依赖；
 3. **payload**：生成器会把与 `case_vars` 值一致的参数/路径段自动换成 `${VAR}`；剩余告警项手工处理；
 4. **TODO 骨架**：缺 payload 的写接口补 payload 并删除 `skip`；DELETE/上传/导出建议人工写 `cleanup` 或不纳入自动回归；
-5. **值层断言**：`# ---- 值层断言 ----` 下面是注释，确认业务语义稳定后再放开；
+5. **断言精简**：字段存在性/类型已由 schema 一条覆盖，不需要再补 `exists` / `field_type`；只为 null 字段、或需要独立失败定位的关键字段单独加；语义层建议补 `list_len` / `each`；
 6. **Schema 严格度**：schema 断言默认启用，生成的 schema 把观察到的字段都列为 `required`，字段常增减时手工裁剪；
 7. **校验 + 执行**：
 
@@ -522,7 +572,8 @@ python -m pytest -m auto
 
 | 原问题 | 现在的行为 |
 |---|---|
-| `data` 为 null 时类型断言失真 | `_type_name(None)` 返回 `"null"`，生成 `{expected: "null", type: field_type}`；存量文件已同步修正 |
+| 逐字段 `exists`/`field_type` 与 schema 重复 | 生成器只输出「一条 schema + 少量业务语义断言」；存量 16 条用例的断言总量从 422 条降到 134 条 |
+| `data` 为 null 时类型断言失真 | `_type_name(None)` 返回 `"null"`；null 字段由 `exists` + `field_type: "null"` 成对断言（schema 不约束 null 类型） |
 | Schema 断言被注释、文件成死产物 | 14 条 schema 断言已全部启用，生成器默认写入并启用 |
 | 参数/路径写死 | 与 `case_vars` 值完全一致的参数/路径段自动替换成 `${VAR}`；剩余疑似 ID 打 WARNING |
 | 写接口风险 | 默认只读：非 GET 不调用；`--allow-write` 才允许写；骨架用例自动带 `skip`，不会跑红 |
@@ -535,7 +586,7 @@ python -m pytest -m auto
 | 中 | 重复 query 参数只保留第一个 | `ids=1&ids=2` 变成 `ids=1` | 改成 YAML dict + 列表值：`payload: {ids: [1, 2]}` |
 | 中 | 用例 id 含生成日期 | `--force` 跨天重生成后 pytest id 变化，影响历史趋势和 `depends_on` | 优先用默认“跳过已存在”；必要时手工固定 api_name |
 | 中 | `msg` 文案断言默认生效 | 后端改文案即失败 | 不稳定时删除或改成 `contains` |
-| 中 | 空列表导致运行期失败 | 生成时 `data` 非空才写 `data.0.*`，运行时可能为空 | 数据不稳定时删除 `data.0` 断言 |
+| 低 | 空列表导致 `list_len` 失败 | 生成时观察到非空列表才写 `list_len gte 1`，运行时若返回空数组会失败 | 数据可能为空时把 `expected` 调成 0 或删除该断言 |
 | 低 | multipart 上传被静默丢弃 | 只留 `# TODO` 注释，解析时跳过 | 人工补 payload 或在清单中删掉 |
 | 低 | dry-run 预览不含 schema 行 | 预览与真实产物略有差异 | 以正式生成结果为准 |
 | 低 | `.yaml.bak` 只有一个槽位 | 连续生成会覆盖上一次备份 | 重要改动前手工复制 `endpoints.yaml` |
@@ -549,6 +600,7 @@ python -m pytest -m auto
 | 生成时登录失败 / 超时 | `.env` 凭据无效或网络不通（与跑 pytest 的要求相同） |
 | 生成了骨架 + TODO | 正常：非 GET（默认只读）、缺 payload、异常响应都不固化断言；骨架自动带 `skip` |
 | 生成结果里有 skipped | 骨架用例的预期状态；补完 payload/断言后删除 `markers` 里的 `skip` |
+| 接口调不通，只有响应 JSON | 用离线模式：`python -m plugins.casegen.gen_cases --from-json resp.json --key 模块.接口名`（见 5.6） |
 | 报“接口未在 endpoints.yaml 登记” | 清单用了格式1 但接口没登记；改格式2 或先登记 |
 | `--force` 后人工断言不见了 | 从 `output/gen_cases_backups/` 恢复；下次优先“删单条再重跑” |
 | schema 断言报文件不存在 | `gen_*.json` 没生成，或 `--schemas-dir` 改到了别处 |
@@ -708,7 +760,7 @@ python -m pytest --collect-only                     # 只收集，不发请求
 python -m pytest -v                                 # 详细输出
 
 # ---- 框架自检（离线）----
-python -m pytest selftest                           # 全部自检（当前 85 条）
+python -m pytest selftest                           # 全部自检（当前 104 条）
 python -m pytest selftest/test_assets.py            # 只查用例资产
 python -m pytest selftest testcases                 # 自检 + 业务
 
@@ -721,6 +773,7 @@ python -m plugins.casegen.har2list --har plugins/casegen/xxx.har
 python -m plugins.casegen.gen_cases --list plugins/casegen/case_list_from_har.txt --dry-run
 python -m plugins.casegen.gen_cases --list plugins/casegen/case_list_from_har.txt
 python -m plugins.casegen.gen_cases --list plugins/casegen/case_list_from_har.txt --allow-write  # 允许写接口
+python -m plugins.casegen.gen_cases --from-json resp.json --key asset.demo_detail  # 只有 JSON，离线生成 schema
 ```
 
 ### 7.6 常见问题

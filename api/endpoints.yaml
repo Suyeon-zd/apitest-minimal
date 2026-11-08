@@ -134,6 +134,10 @@ asset:
 
 # ========== system（gen_cases 自动登记 2026-09-28）==========
 system:
+  parent_list_test:
+    method: GET
+    path: /system/parent_list_test
+
   org_list:
     method: GET
     path: /system/dept/orgList

@@ -1,6 +1,14 @@
-# 2026-11-07 由 plugins/casegen/gen_cases.py 自动生成（契约快照基线用例）
-# 结构层断言已生效；值层断言以注释保留，确认后放开
+# 由 plugins/casegen/gen_cases.py 自动生成（契约快照基线用例）
+# 结构层：一条 schema 覆盖字段存在性与类型；null 字段补 exists + field_type
 # 重新生成默认跳过已存在的 api；--force 整文件覆盖（会丢弃人工修改）
+
+- api_name: "system.parent_list_test（for test）"
+  api: system.parent_list_test
+  markers: [smoke]
+  assert:
+    - {expected: 200, type: status_code}
+    - {expected: 200, path: code, type: json_path}
+
 - api_name: "system.character_list（自动生成基线 2026-11-07）"
   api: system.character_list
   payload: pageNum=1&pageSize=10
@@ -20,8 +28,6 @@
     - {expected: application/json, field: Content-Type, operator: contains, type: header}
     - {expected: 200, path: code, type: json_path}
     - {expected: 操作成功, path: msg, type: json_path}
-    - {expected: true, path: data, type: exists}
-    - {expected: str, path: data, type: field_type}
     - {schema_file: gen_system_sys_user_init_password.json, type: schema}
 
 - api_name: "system.check_dept_by_id（自动生成基线 2026-11-07）"
@@ -34,7 +40,7 @@
     - {expected: 200, path: code, type: json_path}
     - {expected: isExist, path: msg, type: json_path}
     - {expected: true, path: data, type: exists}
-    - {expected: "null", path: data, type: field_type}
+    - {expected: 'null', path: data, type: field_type}
     - {schema_file: gen_system_check_dept_by_id.json, type: schema}
 
 - api_name: "system.org_list（自动生成基线 2026-11-07）"
@@ -46,54 +52,20 @@
     - {expected: application/json, field: Content-Type, operator: contains, type: header}
     - {expected: 200, path: code, type: json_path}
     - {expected: 操作成功, path: msg, type: json_path}
-    - {expected: true, path: data, type: exists}
-    - {expected: list, path: data, type: field_type}
-    - {expected: dict, path: data.0, type: field_type}
-    - {expected: true, path: data.0.deptId, type: exists}
-    - {expected: int, path: data.0.deptId, type: field_type}
-    - {expected: true, path: data.0.parentId, type: exists}
-    - {expected: int, path: data.0.parentId, type: field_type}
+    - {expected: 1, operator: gte, path: data, type: list_len}
     - {expected: true, path: data.0.parentName, type: exists}
-    - {expected: true, path: data.0.ancestors, type: exists}
-    - {expected: str, path: data.0.ancestors, type: field_type}
-    - {expected: true, path: data.0.deptName, type: exists}
-    - {expected: str, path: data.0.deptName, type: field_type}
-    - {expected: true, path: data.0.deptCategory, type: exists}
-    - {expected: str, path: data.0.deptCategory, type: field_type}
-    - {expected: true, path: data.0.orderNum, type: exists}
-    - {expected: int, path: data.0.orderNum, type: field_type}
+    - {expected: 'null', path: data.0.parentName, type: field_type}
     - {expected: true, path: data.0.leader, type: exists}
+    - {expected: 'null', path: data.0.leader, type: field_type}
     - {expected: true, path: data.0.leaderName, type: exists}
+    - {expected: 'null', path: data.0.leaderName, type: field_type}
     - {expected: true, path: data.0.phone, type: exists}
+    - {expected: 'null', path: data.0.phone, type: field_type}
     - {expected: true, path: data.0.email, type: exists}
-    - {expected: true, path: data.0.status, type: exists}
-    - {expected: str, path: data.0.status, type: field_type}
-    - {expected: true, path: data.0.createTime, type: exists}
-    - {expected: str, path: data.0.createTime, type: field_type}
-    - {expected: true, path: data.0.updateTime, type: exists}
-    - {expected: str, path: data.0.updateTime, type: field_type}
-    - {expected: true, path: data.0.type, type: exists}
-    - {expected: str, path: data.0.type, type: field_type}
+    - {expected: 'null', path: data.0.email, type: field_type}
     - {expected: true, path: data.0.treeAddExtra, type: exists}
-    - {expected: true, path: data.0.tenantId, type: exists}
-    - {expected: str, path: data.0.tenantId, type: field_type}
-    - {expected: true, path: data.0.orgManLevel, type: exists}
-    - {expected: str, path: data.0.orgManLevel, type: field_type}
-    - {expected: true, path: data.0.label, type: exists}
-    - {expected: str, path: data.0.label, type: field_type}
-    - {expected: true, path: data.0.id, type: exists}
-    - {expected: int, path: data.0.id, type: field_type}
-    - {expected: true, path: data.0.leaf, type: exists}
-    - {expected: bool, path: data.0.leaf, type: field_type}
+    - {expected: 'null', path: data.0.treeAddExtra, type: field_type}
     - {schema_file: gen_system_org_list.json, type: schema}
-    # ---- 值层断言（数据敏感，人工确认后放开） ----
-    # - {expected: 1, operator: gte, path: data, type: list_len}
-    # - {expected: null, path: data.0.parentName, type: json_path}
-    # - {expected: null, path: data.0.leader, type: json_path}
-    # - {expected: null, path: data.0.leaderName, type: json_path}
-    # - {expected: null, path: data.0.phone, type: json_path}
-    # - {expected: null, path: data.0.email, type: json_path}
-    # - {expected: null, path: data.0.treeAddExtra, type: json_path}
 
 - api_name: "system.sys_org_person_status（自动生成基线 2026-11-07）"
   api: system.sys_org_person_status
@@ -103,34 +75,10 @@
     - {expected: application/json, field: Content-Type, operator: contains, type: header}
     - {expected: 200, path: code, type: json_path}
     - {expected: 操作成功, path: msg, type: json_path}
-    - {expected: true, path: data, type: exists}
-    - {expected: list, path: data, type: field_type}
-    - {expected: dict, path: data.0, type: field_type}
-    - {expected: true, path: data.0.dictCode, type: exists}
-    - {expected: int, path: data.0.dictCode, type: field_type}
-    - {expected: true, path: data.0.dictSort, type: exists}
-    - {expected: int, path: data.0.dictSort, type: field_type}
-    - {expected: true, path: data.0.dictLabel, type: exists}
-    - {expected: str, path: data.0.dictLabel, type: field_type}
-    - {expected: true, path: data.0.dictValue, type: exists}
-    - {expected: str, path: data.0.dictValue, type: field_type}
-    - {expected: true, path: data.0.dictType, type: exists}
-    - {expected: str, path: data.0.dictType, type: field_type}
-    - {expected: true, path: data.0.cssClass, type: exists}
-    - {expected: str, path: data.0.cssClass, type: field_type}
-    - {expected: true, path: data.0.listClass, type: exists}
-    - {expected: str, path: data.0.listClass, type: field_type}
-    - {expected: true, path: data.0.isDefault, type: exists}
-    - {expected: str, path: data.0.isDefault, type: field_type}
-    - {expected: true, path: data.0.remark, type: exists}
-    - {expected: str, path: data.0.remark, type: field_type}
-    - {expected: true, path: data.0.createTime, type: exists}
-    - {expected: str, path: data.0.createTime, type: field_type}
+    - {expected: 1, operator: gte, path: data, type: list_len}
     - {expected: true, path: data.0.status, type: exists}
+    - {expected: 'null', path: data.0.status, type: field_type}
     - {schema_file: gen_system_sys_org_person_status.json, type: schema}
-    # ---- 值层断言（数据敏感，人工确认后放开） ----
-    # - {expected: 2, operator: gte, path: data, type: list_len}
-    # - {expected: null, path: data.0.status, type: json_path}
 
 - api_name: "system.sys_show_hide（自动生成基线 2026-11-07）"
   api: system.sys_show_hide
@@ -140,34 +88,10 @@
     - {expected: application/json, field: Content-Type, operator: contains, type: header}
     - {expected: 200, path: code, type: json_path}
     - {expected: 操作成功, path: msg, type: json_path}
-    - {expected: true, path: data, type: exists}
-    - {expected: list, path: data, type: field_type}
-    - {expected: dict, path: data.0, type: field_type}
-    - {expected: true, path: data.0.dictCode, type: exists}
-    - {expected: int, path: data.0.dictCode, type: field_type}
-    - {expected: true, path: data.0.dictSort, type: exists}
-    - {expected: int, path: data.0.dictSort, type: field_type}
-    - {expected: true, path: data.0.dictLabel, type: exists}
-    - {expected: str, path: data.0.dictLabel, type: field_type}
-    - {expected: true, path: data.0.dictValue, type: exists}
-    - {expected: str, path: data.0.dictValue, type: field_type}
-    - {expected: true, path: data.0.dictType, type: exists}
-    - {expected: str, path: data.0.dictType, type: field_type}
-    - {expected: true, path: data.0.cssClass, type: exists}
-    - {expected: str, path: data.0.cssClass, type: field_type}
-    - {expected: true, path: data.0.listClass, type: exists}
-    - {expected: str, path: data.0.listClass, type: field_type}
-    - {expected: true, path: data.0.isDefault, type: exists}
-    - {expected: str, path: data.0.isDefault, type: field_type}
-    - {expected: true, path: data.0.remark, type: exists}
-    - {expected: str, path: data.0.remark, type: field_type}
-    - {expected: true, path: data.0.createTime, type: exists}
-    - {expected: str, path: data.0.createTime, type: field_type}
+    - {expected: 1, operator: gte, path: data, type: list_len}
     - {expected: true, path: data.0.status, type: exists}
+    - {expected: 'null', path: data.0.status, type: field_type}
     - {schema_file: gen_system_sys_show_hide.json, type: schema}
-    # ---- 值层断言（数据敏感，人工确认后放开） ----
-    # - {expected: 2, operator: gte, path: data, type: list_len}
-    # - {expected: null, path: data.0.status, type: json_path}
 
 - api_name: "system.zjg_flow_person_level（自动生成基线 2026-11-07）"
   api: system.zjg_flow_person_level
@@ -177,34 +101,10 @@
     - {expected: application/json, field: Content-Type, operator: contains, type: header}
     - {expected: 200, path: code, type: json_path}
     - {expected: 操作成功, path: msg, type: json_path}
-    - {expected: true, path: data, type: exists}
-    - {expected: list, path: data, type: field_type}
-    - {expected: dict, path: data.0, type: field_type}
-    - {expected: true, path: data.0.dictCode, type: exists}
-    - {expected: int, path: data.0.dictCode, type: field_type}
-    - {expected: true, path: data.0.dictSort, type: exists}
-    - {expected: int, path: data.0.dictSort, type: field_type}
-    - {expected: true, path: data.0.dictLabel, type: exists}
-    - {expected: str, path: data.0.dictLabel, type: field_type}
-    - {expected: true, path: data.0.dictValue, type: exists}
-    - {expected: str, path: data.0.dictValue, type: field_type}
-    - {expected: true, path: data.0.dictType, type: exists}
-    - {expected: str, path: data.0.dictType, type: field_type}
-    - {expected: true, path: data.0.cssClass, type: exists}
-    - {expected: str, path: data.0.cssClass, type: field_type}
-    - {expected: true, path: data.0.listClass, type: exists}
-    - {expected: str, path: data.0.listClass, type: field_type}
-    - {expected: true, path: data.0.isDefault, type: exists}
-    - {expected: str, path: data.0.isDefault, type: field_type}
-    - {expected: true, path: data.0.remark, type: exists}
-    - {expected: str, path: data.0.remark, type: field_type}
-    - {expected: true, path: data.0.createTime, type: exists}
-    - {expected: str, path: data.0.createTime, type: field_type}
+    - {expected: 1, operator: gte, path: data, type: list_len}
     - {expected: true, path: data.0.status, type: exists}
+    - {expected: 'null', path: data.0.status, type: field_type}
     - {schema_file: gen_system_zjg_flow_person_level.json, type: schema}
-    # ---- 值层断言（数据敏感，人工确认后放开） ----
-    # - {expected: 4, operator: gte, path: data, type: list_len}
-    # - {expected: null, path: data.0.status, type: json_path}
 
 - api_name: "system.zjg_flow_person_position（自动生成基线 2026-11-07）"
   api: system.zjg_flow_person_position
@@ -214,34 +114,10 @@
     - {expected: application/json, field: Content-Type, operator: contains, type: header}
     - {expected: 200, path: code, type: json_path}
     - {expected: 操作成功, path: msg, type: json_path}
-    - {expected: true, path: data, type: exists}
-    - {expected: list, path: data, type: field_type}
-    - {expected: dict, path: data.0, type: field_type}
-    - {expected: true, path: data.0.dictCode, type: exists}
-    - {expected: int, path: data.0.dictCode, type: field_type}
-    - {expected: true, path: data.0.dictSort, type: exists}
-    - {expected: int, path: data.0.dictSort, type: field_type}
-    - {expected: true, path: data.0.dictLabel, type: exists}
-    - {expected: str, path: data.0.dictLabel, type: field_type}
-    - {expected: true, path: data.0.dictValue, type: exists}
-    - {expected: str, path: data.0.dictValue, type: field_type}
-    - {expected: true, path: data.0.dictType, type: exists}
-    - {expected: str, path: data.0.dictType, type: field_type}
-    - {expected: true, path: data.0.cssClass, type: exists}
-    - {expected: str, path: data.0.cssClass, type: field_type}
-    - {expected: true, path: data.0.listClass, type: exists}
-    - {expected: str, path: data.0.listClass, type: field_type}
-    - {expected: true, path: data.0.isDefault, type: exists}
-    - {expected: str, path: data.0.isDefault, type: field_type}
-    - {expected: true, path: data.0.remark, type: exists}
-    - {expected: str, path: data.0.remark, type: field_type}
-    - {expected: true, path: data.0.createTime, type: exists}
-    - {expected: str, path: data.0.createTime, type: field_type}
+    - {expected: 1, operator: gte, path: data, type: list_len}
     - {expected: true, path: data.0.status, type: exists}
+    - {expected: 'null', path: data.0.status, type: field_type}
     - {schema_file: gen_system_zjg_flow_person_position.json, type: schema}
-    # ---- 值层断言（数据敏感，人工确认后放开） ----
-    # - {expected: 2, operator: gte, path: data, type: list_len}
-    # - {expected: null, path: data.0.status, type: json_path}
 
 - api_name: "system.zjg_flow_person_type（自动生成基线 2026-11-07）"
   api: system.zjg_flow_person_type
@@ -251,34 +127,10 @@
     - {expected: application/json, field: Content-Type, operator: contains, type: header}
     - {expected: 200, path: code, type: json_path}
     - {expected: 操作成功, path: msg, type: json_path}
-    - {expected: true, path: data, type: exists}
-    - {expected: list, path: data, type: field_type}
-    - {expected: dict, path: data.0, type: field_type}
-    - {expected: true, path: data.0.dictCode, type: exists}
-    - {expected: int, path: data.0.dictCode, type: field_type}
-    - {expected: true, path: data.0.dictSort, type: exists}
-    - {expected: int, path: data.0.dictSort, type: field_type}
-    - {expected: true, path: data.0.dictLabel, type: exists}
-    - {expected: str, path: data.0.dictLabel, type: field_type}
-    - {expected: true, path: data.0.dictValue, type: exists}
-    - {expected: str, path: data.0.dictValue, type: field_type}
-    - {expected: true, path: data.0.dictType, type: exists}
-    - {expected: str, path: data.0.dictType, type: field_type}
-    - {expected: true, path: data.0.cssClass, type: exists}
-    - {expected: str, path: data.0.cssClass, type: field_type}
-    - {expected: true, path: data.0.listClass, type: exists}
-    - {expected: str, path: data.0.listClass, type: field_type}
-    - {expected: true, path: data.0.isDefault, type: exists}
-    - {expected: str, path: data.0.isDefault, type: field_type}
-    - {expected: true, path: data.0.remark, type: exists}
-    - {expected: str, path: data.0.remark, type: field_type}
-    - {expected: true, path: data.0.createTime, type: exists}
-    - {expected: str, path: data.0.createTime, type: field_type}
+    - {expected: 1, operator: gte, path: data, type: list_len}
     - {expected: true, path: data.0.status, type: exists}
+    - {expected: 'null', path: data.0.status, type: field_type}
     - {schema_file: gen_system_zjg_flow_person_type.json, type: schema}
-    # ---- 值层断言（数据敏感，人工确认后放开） ----
-    # - {expected: 7, operator: gte, path: data, type: list_len}
-    # - {expected: null, path: data.0.status, type: json_path}
 
 - api_name: "system.menu_list（自动生成基线 2026-11-07）"
   api: system.menu_list
@@ -288,48 +140,14 @@
     - {expected: application/json, field: Content-Type, operator: contains, type: header}
     - {expected: 200, path: code, type: json_path}
     - {expected: 操作成功, path: msg, type: json_path}
-    - {expected: true, path: data, type: exists}
-    - {expected: list, path: data, type: field_type}
-    - {expected: dict, path: data.0, type: field_type}
-    - {expected: true, path: data.0.menuId, type: exists}
-    - {expected: int, path: data.0.menuId, type: field_type}
-    - {expected: true, path: data.0.menuName, type: exists}
-    - {expected: str, path: data.0.menuName, type: field_type}
-    - {expected: true, path: data.0.parentId, type: exists}
-    - {expected: int, path: data.0.parentId, type: field_type}
-    - {expected: true, path: data.0.orderNum, type: exists}
-    - {expected: int, path: data.0.orderNum, type: field_type}
-    - {expected: true, path: data.0.path, type: exists}
-    - {expected: str, path: data.0.path, type: field_type}
+    - {expected: 1, operator: gte, path: data, type: list_len}
     - {expected: true, path: data.0.component, type: exists}
+    - {expected: 'null', path: data.0.component, type: field_type}
     - {expected: true, path: data.0.queryParam, type: exists}
-    - {expected: true, path: data.0.isFrame, type: exists}
-    - {expected: str, path: data.0.isFrame, type: field_type}
-    - {expected: true, path: data.0.isCache, type: exists}
-    - {expected: str, path: data.0.isCache, type: field_type}
-    - {expected: true, path: data.0.menuType, type: exists}
-    - {expected: str, path: data.0.menuType, type: field_type}
-    - {expected: true, path: data.0.visible, type: exists}
-    - {expected: str, path: data.0.visible, type: field_type}
-    - {expected: true, path: data.0.status, type: exists}
-    - {expected: str, path: data.0.status, type: field_type}
+    - {expected: 'null', path: data.0.queryParam, type: field_type}
     - {expected: true, path: data.0.perms, type: exists}
-    - {expected: true, path: data.0.icon, type: exists}
-    - {expected: str, path: data.0.icon, type: field_type}
-    - {expected: true, path: data.0.createDept, type: exists}
-    - {expected: int, path: data.0.createDept, type: field_type}
-    - {expected: true, path: data.0.remark, type: exists}
-    - {expected: str, path: data.0.remark, type: field_type}
-    - {expected: true, path: data.0.createTime, type: exists}
-    - {expected: str, path: data.0.createTime, type: field_type}
-    - {expected: true, path: data.0.children, type: exists}
-    - {expected: list, path: data.0.children, type: field_type}
+    - {expected: 'null', path: data.0.perms, type: field_type}
     - {schema_file: gen_system_menu_list.json, type: schema}
-    # ---- 值层断言（数据敏感，人工确认后放开） ----
-    # - {expected: 424, operator: gte, path: data, type: list_len}
-    # - {expected: null, path: data.0.component, type: json_path}
-    # - {expected: null, path: data.0.queryParam, type: json_path}
-    # - {expected: null, path: data.0.perms, type: json_path}
 
 - api_name: "system.parent_list（自动生成基线 2026-11-07）"
   api: system.parent_list
@@ -339,68 +157,12 @@
     - {expected: application/json, field: Content-Type, operator: contains, type: header}
     - {expected: 200, path: code, type: json_path}
     - {expected: 操作成功, path: msg, type: json_path}
-    - {expected: true, path: data, type: exists}
-    - {expected: list, path: data, type: field_type}
-    - {expected: dict, path: data.0, type: field_type}
-    - {expected: true, path: data.0.createDept, type: exists}
-    - {expected: int, path: data.0.createDept, type: field_type}
-    - {expected: true, path: data.0.createBy, type: exists}
-    - {expected: int, path: data.0.createBy, type: field_type}
-    - {expected: true, path: data.0.createTime, type: exists}
-    - {expected: str, path: data.0.createTime, type: field_type}
-    - {expected: true, path: data.0.updateBy, type: exists}
-    - {expected: int, path: data.0.updateBy, type: field_type}
-    - {expected: true, path: data.0.updateTime, type: exists}
-    - {expected: str, path: data.0.updateTime, type: field_type}
-    - {expected: true, path: data.0.menuId, type: exists}
-    - {expected: int, path: data.0.menuId, type: field_type}
-    - {expected: true, path: data.0.parentId, type: exists}
-    - {expected: int, path: data.0.parentId, type: field_type}
-    - {expected: true, path: data.0.menuName, type: exists}
-    - {expected: str, path: data.0.menuName, type: field_type}
-    - {expected: true, path: data.0.orderNum, type: exists}
-    - {expected: int, path: data.0.orderNum, type: field_type}
-    - {expected: true, path: data.0.path, type: exists}
-    - {expected: str, path: data.0.path, type: field_type}
+    - {expected: 1, operator: gte, path: data, type: list_len}
     - {expected: true, path: data.0.component, type: exists}
-    - {expected: true, path: data.0.queryParam, type: exists}
-    - {expected: str, path: data.0.queryParam, type: field_type}
-    - {expected: true, path: data.0.isFrame, type: exists}
-    - {expected: str, path: data.0.isFrame, type: field_type}
-    - {expected: true, path: data.0.isCache, type: exists}
-    - {expected: str, path: data.0.isCache, type: field_type}
-    - {expected: true, path: data.0.menuType, type: exists}
-    - {expected: str, path: data.0.menuType, type: field_type}
-    - {expected: true, path: data.0.visible, type: exists}
-    - {expected: str, path: data.0.visible, type: field_type}
-    - {expected: true, path: data.0.status, type: exists}
-    - {expected: str, path: data.0.status, type: field_type}
-    - {expected: true, path: data.0.perms, type: exists}
-    - {expected: str, path: data.0.perms, type: field_type}
-    - {expected: true, path: data.0.icon, type: exists}
-    - {expected: str, path: data.0.icon, type: field_type}
-    - {expected: true, path: data.0.remark, type: exists}
-    - {expected: str, path: data.0.remark, type: field_type}
+    - {expected: 'null', path: data.0.component, type: field_type}
     - {expected: true, path: data.0.parentName, type: exists}
-    - {expected: true, path: data.0.children, type: exists}
-    - {expected: list, path: data.0.children, type: field_type}
-    - {expected: true, path: data.0.routeName, type: exists}
-    - {expected: str, path: data.0.routeName, type: field_type}
-    - {expected: true, path: data.0.routerPath, type: exists}
-    - {expected: str, path: data.0.routerPath, type: field_type}
-    - {expected: true, path: data.0.componentInfo, type: exists}
-    - {expected: str, path: data.0.componentInfo, type: field_type}
-    - {expected: true, path: data.0.menuFrame, type: exists}
-    - {expected: bool, path: data.0.menuFrame, type: field_type}
-    - {expected: true, path: data.0.innerLink, type: exists}
-    - {expected: bool, path: data.0.innerLink, type: field_type}
-    - {expected: true, path: data.0.parentView, type: exists}
-    - {expected: bool, path: data.0.parentView, type: field_type}
+    - {expected: 'null', path: data.0.parentName, type: field_type}
     - {schema_file: gen_system_parent_list.json, type: schema}
-    # ---- 值层断言（数据敏感，人工确认后放开） ----
-    # - {expected: 11, operator: gte, path: data, type: list_len}
-    # - {expected: null, path: data.0.component, type: json_path}
-    # - {expected: null, path: data.0.parentName, type: json_path}
 
 - api_name: "system.org_person_list（自动生成基线 2026-11-07）"
   api: system.org_person_list
@@ -422,44 +184,16 @@
     - {expected: application/json, field: Content-Type, operator: contains, type: header}
     - {expected: 200, path: code, type: json_path}
     - {expected: 操作成功, path: msg, type: json_path}
-    - {expected: true, path: data, type: exists}
-    - {expected: list, path: data, type: field_type}
-    - {expected: dict, path: data.0, type: field_type}
-    - {expected: true, path: data.0.roleId, type: exists}
-    - {expected: int, path: data.0.roleId, type: field_type}
-    - {expected: true, path: data.0.roleName, type: exists}
-    - {expected: str, path: data.0.roleName, type: field_type}
-    - {expected: true, path: data.0.roleKey, type: exists}
-    - {expected: str, path: data.0.roleKey, type: field_type}
-    - {expected: true, path: data.0.roleSort, type: exists}
-    - {expected: int, path: data.0.roleSort, type: field_type}
-    - {expected: true, path: data.0.dataScope, type: exists}
-    - {expected: str, path: data.0.dataScope, type: field_type}
-    - {expected: true, path: data.0.menuCheckStrictly, type: exists}
-    - {expected: bool, path: data.0.menuCheckStrictly, type: field_type}
-    - {expected: true, path: data.0.deptCheckStrictly, type: exists}
-    - {expected: bool, path: data.0.deptCheckStrictly, type: field_type}
-    - {expected: true, path: data.0.status, type: exists}
-    - {expected: str, path: data.0.status, type: field_type}
+    - {expected: 1, operator: gte, path: data, type: list_len}
     - {expected: true, path: data.0.remark, type: exists}
-    - {expected: true, path: data.0.reason, type: exists}
-    - {expected: str, path: data.0.reason, type: field_type}
+    - {expected: 'null', path: data.0.remark, type: field_type}
     - {expected: true, path: data.0.roleFlag, type: exists}
-    - {expected: true, path: data.0.createTime, type: exists}
-    - {expected: str, path: data.0.createTime, type: field_type}
+    - {expected: 'null', path: data.0.roleFlag, type: field_type}
     - {expected: true, path: data.0.parentId, type: exists}
-    - {expected: true, path: data.0.flag, type: exists}
-    - {expected: bool, path: data.0.flag, type: field_type}
+    - {expected: 'null', path: data.0.parentId, type: field_type}
     - {expected: true, path: data.0.menuIds, type: exists}
-    - {expected: true, path: data.0.superAdmin, type: exists}
-    - {expected: bool, path: data.0.superAdmin, type: field_type}
+    - {expected: 'null', path: data.0.menuIds, type: field_type}
     - {schema_file: gen_system_list_v2.json, type: schema}
-    # ---- 值层断言（数据敏感，人工确认后放开） ----
-    # - {expected: 9, operator: gte, path: data, type: list_len}
-    # - {expected: null, path: data.0.remark, type: json_path}
-    # - {expected: null, path: data.0.roleFlag, type: json_path}
-    # - {expected: null, path: data.0.parentId, type: json_path}
-    # - {expected: null, path: data.0.menuIds, type: json_path}
 
 - api_name: "system.user_list（自动生成基线 2026-11-07）"
   api: system.user_list
